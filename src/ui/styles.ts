@@ -2,491 +2,929 @@ import { Theme } from '../types';
 import { generateCSSVariables } from './theme';
 
 /**
- * Generate all CSS styles for WINR modal
+ * Generate all CSS styles for WINR modal — pixel-perfect match to iOS SDK
  */
 export function generateModalStyles(theme: Theme): string {
   const cssVariables = generateCSSVariables(theme);
 
   return `
-/* WINR Modal Styles */
+/* ═══════════════════════════════════════════
+   WINR Modal Styles — iOS SDK Parity
+   ═══════════════════════════════════════════ */
+
 .winr-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 10000;
-  padding: var(--winr-spacing-md);
-  box-sizing: border-box;
   font-family: var(--winr-font-family);
-  
-  /* CSS Variables */
   ${cssVariables}
 }
 
+/* ── Modal Container (iOS drawer-style) ── */
 .winr-modal {
   background: var(--winr-color-background);
-  border-radius: var(--winr-radius-xl);
-  box-shadow: var(--winr-shadow-xl);
+  border-radius: 24px 24px 0 0;
   max-width: 480px;
   width: 100%;
-  max-height: 90vh;
+  height: 85vh;
   overflow: hidden;
   position: relative;
-  animation: winr-modal-enter 0.3s ease-out;
+  animation: winr-slide-up 0.35s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-@keyframes winr-modal-enter {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+@keyframes winr-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
 .winr-modal-exit {
-  animation: winr-modal-exit 0.2s ease-in forwards;
+  animation: winr-slide-down 0.25s ease-in forwards;
 }
 
-@keyframes winr-modal-exit {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.95) translateY(20px);
-  }
+@keyframes winr-slide-down {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(100%); opacity: 0; }
 }
 
-/* Header */
-.winr-modal-header {
-  background: linear-gradient(135deg, var(--winr-color-primary), var(--winr-color-secondary));
-  padding: var(--winr-spacing-lg);
-  position: relative;
-  text-align: center;
-}
-
-.winr-close-button {
+/* ── Background Layer (ZStack) ── */
+.winr-experience-bg {
   position: absolute;
-  top: var(--winr-spacing-md);
-  right: var(--winr-spacing-md);
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: var(--winr-radius-full);
-  width: 32px;
-  height: 32px;
+  inset: 0;
+  background: linear-gradient(180deg, var(--winr-color-background) 0%, rgba(13,13,13,0.94) 100%);
+  z-index: 0;
+}
+
+.winr-experience-glow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 840px;
+  height: 840px;
+  background: radial-gradient(circle, rgba(255,215,0,0.35) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Header Overlay (iOS: .overlay at top) ── */
+.winr-header-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  z-index: 100;
+}
+
+.winr-header-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(26,26,46,0.9);
+  border: 1px solid var(--winr-card-border);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: white;
-  font-size: 18px;
-  transition: all 0.2s ease;
+  color: var(--winr-color-text);
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.15s;
+  padding: 0;
+  line-height: 1;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.winr-close-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+.winr-header-icon:hover {
+  background: rgba(26,26,46,1);
 }
 
-.winr-logo {
-  height: 40px;
-  margin-bottom: var(--winr-spacing-sm);
+.winr-header-spacer {
+  width: 28px;
+  height: 28px;
 }
 
-.winr-header-title {
-  color: white;
-  font-size: var(--winr-font-size-xl);
-  font-weight: var(--winr-font-weight-bold);
-  margin: 0 0 var(--winr-spacing-xs) 0;
-}
-
-.winr-header-subtitle {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: var(--winr-font-size-sm);
-  margin: 0;
-}
-
-/* Content Area */
+/* ── Content wrapper ── */
 .winr-modal-content {
-  padding: var(--winr-spacing-lg);
-  max-height: calc(90vh - 120px);
-  overflow-y: auto;
-}
-
-/* Streak Dashboard */
-.winr-streak-dashboard {
-  margin-bottom: var(--winr-spacing-lg);
-}
-
-.winr-streak-title {
-  color: var(--winr-color-text);
-  font-size: var(--winr-font-size-lg);
-  font-weight: var(--winr-font-weight-semibold);
-  text-align: center;
-  margin-bottom: var(--winr-spacing-md);
-}
-
-.winr-streak-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-  gap: var(--winr-spacing-sm);
-  margin-bottom: var(--winr-spacing-lg);
-}
-
-.winr-streak-day {
-  background: var(--winr-color-surface);
-  border-radius: var(--winr-radius-lg);
-  padding: var(--winr-spacing-md) var(--winr-spacing-sm);
-  text-align: center;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
   position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
+  z-index: 1;
 }
 
-.winr-streak-day.completed {
-  background: linear-gradient(135deg, var(--winr-color-primary), var(--winr-color-secondary));
-  color: white;
-  transform: scale(1.05);
+.winr-experience-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: 50px;
 }
 
-.winr-streak-day.current {
-  border-color: var(--winr-color-primary);
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-}
+/* ═══════════════════════════════════════════
+   Email Capture — match EmailCaptureView.swift
+   ═══════════════════════════════════════════ */
 
-.winr-streak-day-number {
-  font-size: var(--winr-font-size-sm);
-  font-weight: var(--winr-font-weight-medium);
-  color: var(--winr-color-text-secondary);
-  margin-bottom: var(--winr-spacing-xs);
-}
-
-.winr-streak-day.completed .winr-streak-day-number {
-  color: white;
-}
-
-.winr-streak-day-entries {
-  font-size: var(--winr-font-size-base);
-  font-weight: var(--winr-font-weight-bold);
-  color: var(--winr-color-text);
-}
-
-.winr-streak-day.completed .winr-streak-day-entries {
-  color: white;
-}
-
-.winr-streak-day-label {
-  font-size: var(--winr-font-size-sm);
-  color: var(--winr-color-text-secondary);
-  margin-top: var(--winr-spacing-xs);
-}
-
-.winr-streak-day.completed .winr-streak-day-label {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* Stats */
-.winr-stats {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--winr-spacing-lg);
-  background: var(--winr-color-surface);
-  border-radius: var(--winr-radius-lg);
-  padding: var(--winr-spacing-md);
-}
-
-.winr-stat {
-  text-align: center;
-  flex: 1;
-}
-
-.winr-stat-value {
-  font-size: var(--winr-font-size-xl);
-  font-weight: var(--winr-font-weight-bold);
-  color: var(--winr-color-primary);
-  display: block;
-}
-
-.winr-stat-label {
-  font-size: var(--winr-font-size-sm);
-  color: var(--winr-color-text-secondary);
-  margin-top: var(--winr-spacing-xs);
-}
-
-/* Action Buttons */
-.winr-actions {
+.winr-email-capture {
   display: flex;
   flex-direction: column;
-  gap: var(--winr-spacing-md);
-}
-
-.winr-primary-button {
-  background: linear-gradient(135deg, var(--winr-color-primary), var(--winr-color-secondary));
-  color: white;
-  border: none;
-  border-radius: var(--winr-radius-lg);
-  padding: var(--winr-spacing-md) var(--winr-spacing-lg);
-  font-size: var(--winr-font-size-base);
-  font-weight: var(--winr-font-weight-semibold);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  min-height: 48px;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--winr-spacing-sm);
+  padding: 2px 0 0 0;
+  gap: 20px;
 }
 
-.winr-primary-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: var(--winr-shadow-lg);
+.winr-email-logo {
+  margin-bottom: 40px;
 }
 
-.winr-primary-button:active {
-  transform: translateY(0);
+.winr-email-logo img {
+  max-width: 200px;
+  max-height: 80px;
+  object-fit: contain;
 }
 
-.winr-primary-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.winr-secondary-button {
-  background: var(--winr-color-surface);
-  color: var(--winr-color-text);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--winr-radius-lg);
-  padding: var(--winr-spacing-sm) var(--winr-spacing-lg);
-  font-size: var(--winr-font-size-sm);
-  font-weight: var(--winr-font-weight-medium);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.winr-secondary-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.winr-secondary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Loading Spinner */
-.winr-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: winr-spin 1s linear infinite;
-}
-
-@keyframes winr-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Email Capture */
-.winr-email-capture {
-  background: var(--winr-color-surface);
-  border-radius: var(--winr-radius-lg);
-  padding: var(--winr-spacing-lg);
-  margin-bottom: var(--winr-spacing-lg);
-}
-
-.winr-email-title {
-  color: var(--winr-color-text);
-  font-size: var(--winr-font-size-lg);
-  font-weight: var(--winr-font-weight-semibold);
+.winr-email-titles {
   text-align: center;
-  margin-bottom: var(--winr-spacing-sm);
+  padding-top: 8px;
 }
 
-.winr-email-subtitle {
-  color: var(--winr-color-text-secondary);
-  font-size: var(--winr-font-size-sm);
-  text-align: center;
-  margin-bottom: var(--winr-spacing-lg);
+.winr-email-titles h2 {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: var(--winr-color-secondary);
+  margin: 0 0 10px 0;
 }
 
-.winr-form-group {
-  margin-bottom: var(--winr-spacing-md);
+.winr-email-titles p {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--winr-muted);
+  margin: 0;
+  line-height: 1.5;
 }
 
-.winr-form-label {
-  color: var(--winr-color-text);
-  font-size: var(--winr-font-size-sm);
-  font-weight: var(--winr-font-weight-medium);
-  display: block;
-  margin-bottom: var(--winr-spacing-sm);
-}
-
-.winr-form-input {
+/* Email field group */
+.winr-email-field-group {
   width: 100%;
-  background: var(--winr-color-background);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--winr-radius-md);
-  padding: var(--winr-spacing-md);
-  color: var(--winr-color-text);
-  font-size: var(--winr-font-size-base);
-  transition: all 0.2s ease;
+  padding: 0 20px;
   box-sizing: border-box;
 }
 
-.winr-form-input:focus {
+.winr-email-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(224,224,224,0.9);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.winr-email-input-wrapper {
+  position: relative;
+  background: var(--winr-input-bg);
+  border: 1px solid var(--winr-input-border);
+  border-radius: 16px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  box-shadow: 0 10px 14px rgba(0,0,0,0.5);
+  transition: border-color 0.2s;
+}
+
+.winr-email-input-wrapper.error {
+  border-color: rgba(239,68,68,0.6);
+}
+
+.winr-email-input-wrapper .winr-envelope-icon {
+  color: var(--winr-input-placeholder);
+  font-size: 15px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.winr-email-input {
+  flex: 1;
+  background: transparent;
+  border: none;
   outline: none;
-  border-color: var(--winr-color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--winr-color-text);
+  font-family: var(--winr-font-family);
 }
 
-.winr-form-input::placeholder {
-  color: var(--winr-color-text-secondary);
+.winr-email-input::placeholder {
+  color: var(--winr-input-placeholder);
+  font-weight: 500;
 }
 
-.winr-checkbox-group {
+.winr-email-error {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(239,68,68,0.9);
+  padding-left: 4px;
+  margin-top: 6px;
+  display: none;
+}
+
+/* Age gate checkbox */
+.winr-age-gate {
   display: flex;
   align-items: flex-start;
-  gap: var(--winr-spacing-sm);
-}
-
-.winr-checkbox {
-  margin-top: 2px;
-}
-
-.winr-checkbox-label {
-  font-size: var(--winr-font-size-sm);
-  color: var(--winr-color-text-secondary);
-  line-height: 1.5;
+  gap: 10px;
+  padding: 0 20px;
   cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-/* Error States */
-.winr-form-input.error {
-  border-color: var(--winr-color-error);
+.winr-age-gate-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
-.winr-error-message {
-  color: var(--winr-color-error);
-  font-size: var(--winr-font-size-sm);
-  margin-top: var(--winr-spacing-xs);
+.winr-age-gate-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(224,224,224,0.85);
+  line-height: 1.4;
 }
 
-/* Success Animation */
-.winr-success-animation {
+/* CTA button */
+.winr-enter-button {
+  width: calc(100% - 40px);
+  margin: 6px 20px 0 20px;
+  padding: 14px 0;
+  border: none;
+  border-radius: 22px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--winr-btn-text);
+  background: var(--winr-btn-color);
+  cursor: pointer;
+  transition: opacity 0.2s, box-shadow 0.2s;
+  font-family: var(--winr-font-family);
+}
+
+.winr-enter-button.active {
+  box-shadow: 0 12px 16px rgba(255,215,0,0.5);
+}
+
+.winr-enter-button.inactive {
+  opacity: 0.4;
+}
+
+/* Legal links */
+.winr-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  padding-top: 2px;
+  font-size: 11px;
+}
+
+.winr-legal-links span {
+  color: rgba(160,160,176,0.7);
+}
+
+.winr-legal-links a {
+  color: var(--winr-btn-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════
+   Streak Dashboard — match StreakDashboardView.swift
+   ═══════════════════════════════════════════ */
+
+.winr-streak-dashboard {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+}
+
+.winr-streak-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 14px;
+  padding-bottom: 160px;
+}
+
+/* Hero logo + prize */
+.winr-streak-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+}
+
+.winr-streak-hero-logo {
+  max-width: 75%;
+  max-height: 22vh;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(255,215,0,0.5));
+}
+
+.winr-streak-prize-banner {
   text-align: center;
-  padding: var(--winr-spacing-lg);
+  margin-top: 14px;
 }
 
-.winr-success-icon {
+.winr-streak-prize-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #FFFFFF;
+  text-shadow: 0 4px 8px rgba(255,215,0,0.8);
+  margin: 0;
+  font-family: var(--winr-font-family);
+}
+
+.winr-streak-prize-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--winr-muted);
+  margin: 4px 0 0 0;
+  text-align: center;
+}
+
+/* Streak tiles carousel */
+.winr-streak-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--winr-color-secondary);
+  padding-left: 6px;
+  margin: 14px 0 8px 0;
+}
+
+.winr-streak-carousel {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 20px;
+  margin: 0 -14px;
+}
+
+.winr-streak-carousel::-webkit-scrollbar { display: none; }
+.winr-streak-carousel { -ms-overflow-style: none; scrollbar-width: none; }
+
+.winr-streak-tiles-row {
+  display: flex;
+  gap: 10px;
+  width: max-content;
+}
+
+/* Bonus progress pills */
+.winr-bonus-progress-section {
+  padding: 0 6px;
+  margin-top: 14px;
+}
+
+.winr-bonus-progress-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--winr-color-secondary);
+  margin: 0 0 10px 0;
+}
+
+.winr-bonus-progress-row {
+  display: flex;
+  gap: 10px;
+}
+
+.winr-bonus-pill {
+  flex: 1;
+  padding: 10px;
+  background: rgba(26,26,46,0.5);
+  border-radius: 16px;
+  border: 1px solid rgba(255,215,0,0.25);
+}
+
+.winr-bonus-pill-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.winr-bonus-pill-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--winr-muted);
+}
+
+.winr-bonus-pill-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--winr-color-secondary);
+}
+
+.winr-bonus-pill-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.winr-bonus-pill-fill {
+  height: 100%;
+  background: var(--winr-glow);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.winr-bonus-pill-footer {
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+.winr-bonus-pill-footer.earned {
+  color: var(--winr-glow);
+}
+
+.winr-bonus-pill-footer.pending {
+  color: var(--winr-muted);
+}
+
+/* Sticky footer */
+.winr-streak-footer {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 0 14px 16px 14px;
+  text-align: center;
+  z-index: 10;
+  background: linear-gradient(180deg, transparent 0%, rgba(13,13,13,0.96) 40%);
+}
+
+.winr-streak-footer-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--winr-color-secondary);
+  margin: 0 0 4px 0;
+}
+
+.winr-streak-footer-desc {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--winr-muted);
+  margin: 0 0 8px 0;
+}
+
+.winr-claim-button {
+  width: calc(100% - 8px);
+  margin: 2px 4px 0 4px;
+  padding: 14px 0;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--winr-btn-text);
+  background: var(--winr-btn-color);
+  cursor: pointer;
+  font-family: var(--winr-font-family);
+  box-shadow: 0 8px 14px rgba(255,215,0,0.6);
+  transition: transform 0.15s;
+}
+
+.winr-claim-button:active { transform: scale(0.97); }
+
+.winr-claimed-icon {
+  font-size: 28px;
+  color: var(--winr-glow);
+  margin-bottom: 6px;
+}
+
+.winr-done-button {
+  width: calc(100% - 8px);
+  margin: 2px 4px 0 4px;
+  padding: 14px 0;
+  border: 1px solid rgba(255,215,0,0.4);
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--winr-color-secondary);
+  background: rgba(26,26,46,0.8);
+  cursor: pointer;
+  font-family: var(--winr-font-family);
+}
+
+/* ═══════════════════════════════════════════
+   Streak Day Tile — match CompactStreakTile
+   ═══════════════════════════════════════════ */
+
+.winr-tile {
+  width: 90px;
+  height: 115px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  position: relative;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+/* Tile states */
+.winr-tile.is-today {
+  background: linear-gradient(135deg, var(--winr-btn-color), rgba(26,26,46,0.9));
+  border: 2px solid var(--winr-glow);
+  box-shadow: 0 4px 12px rgba(255,215,0,0.7);
+  transform: scale(1.05);
+}
+
+.winr-tile.is-claimed {
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(26,26,46,0.9));
+  border: 1px solid rgba(255,255,255,0.6);
+}
+
+.winr-tile.is-locked {
+  background: linear-gradient(180deg, rgba(26,26,46,0.45), rgba(26,26,46,0.3));
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Day pill */
+.winr-tile-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  position: relative;
+}
+
+.winr-tile.is-today .winr-tile-pill {
+  background: rgba(26,26,46,0.95);
+  color: var(--winr-btn-text);
+}
+
+.winr-tile.is-claimed .winr-tile-pill {
+  background: rgba(255,255,255,0.35);
+  color: var(--winr-color-secondary);
+}
+
+.winr-tile.is-locked .winr-tile-pill {
+  background: rgba(26,26,46,0.85);
+  color: var(--winr-color-secondary);
+}
+
+/* Pulse ring on today pill */
+.winr-tile.is-today .winr-tile-pill::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--winr-glow);
+  animation: winr-pill-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes winr-pill-pulse {
+  0%   { transform: scale(1);    opacity: 1;   }
+  100% { transform: scale(1.12); opacity: 0.4; }
+}
+
+/* Entries number */
+.winr-tile-entries {
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.winr-tile.is-today .winr-tile-entries  { color: #FFFFFF; }
+.winr-tile.is-claimed .winr-tile-entries { color: var(--winr-color-text); }
+.winr-tile.is-locked .winr-tile-entries  { color: rgba(160,160,176,0.85); }
+
+/* Entries label */
+.winr-tile-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.winr-tile.is-today .winr-tile-label  { color: rgba(255,255,255,0.85); }
+.winr-tile.is-claimed .winr-tile-label { color: rgba(255,255,255,0.8); }
+.winr-tile.is-locked .winr-tile-label  { color: rgba(160,160,176,0.6); }
+
+/* Status icon */
+.winr-tile-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.winr-tile.is-today .winr-tile-icon {
+  text-shadow: 0 0 6px var(--winr-glow);
+}
+
+/* ═══════════════════════════════════════════
+   Bonus Entries — match BonusEntriesView.swift
+   ═══════════════════════════════════════════ */
+
+.winr-bonus-entries {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 50px 24px 24px 24px;
+  gap: 20px;
+}
+
+.winr-bonus-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--winr-color-text);
+  margin: 0;
+}
+
+.winr-bonus-desc {
+  font-size: 16px;
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.winr-bonus-claim-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--winr-color-background);
+  background: var(--winr-color-text);
+  cursor: pointer;
+  font-family: var(--winr-font-family);
+  transition: transform 0.15s;
+}
+
+.winr-bonus-claim-btn:active { transform: scale(0.97); }
+
+.winr-bonus-skip {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--winr-font-family);
+}
+
+/* ═══════════════════════════════════════════
+   How It Works — match HowItWorksView.swift
+   ═══════════════════════════════════════════ */
+
+.winr-how-it-works {
+  position: relative;
+  height: 100%;
+}
+
+.winr-how-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 0 24px 140px 24px;
+}
+
+.winr-how-hero {
+  text-align: center;
+  padding-top: 4px;
+  margin-bottom: 28px;
+}
+
+.winr-how-hero-emoji {
   font-size: 48px;
-  color: var(--winr-color-success);
-  animation: winr-bounce 0.6s ease;
+  margin-bottom: 10px;
 }
 
-@keyframes winr-bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-10px);
-  }
-  60% {
-    transform: translateY(-5px);
-  }
+.winr-how-hero-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--winr-color-text);
+  margin: 0 0 10px 0;
 }
 
-/* Responsive Design */
-@media (max-width: 640px) {
-  .winr-modal-overlay {
-    padding: var(--winr-spacing-sm);
-  }
-  
-  .winr-modal {
-    max-height: 95vh;
-  }
-  
-  .winr-modal-header {
-    padding: var(--winr-spacing-md);
-  }
-  
-  .winr-modal-content {
-    padding: var(--winr-spacing-md);
-  }
-  
-  .winr-streak-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--winr-spacing-xs);
-  }
-  
-  .winr-streak-day {
-    padding: var(--winr-spacing-sm);
-  }
-  
-  .winr-stats {
-    flex-direction: column;
-    text-align: center;
-    gap: var(--winr-spacing-sm);
-  }
+.winr-how-hero-desc {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--winr-muted);
+  margin: 0;
 }
 
-/* Dark mode preference support */
-@media (prefers-color-scheme: light) {
-  .winr-modal-overlay {
-    --winr-color-background: #ffffff;
-    --winr-color-surface: #f8fafc;
-    --winr-color-text: #1e293b;
-    --winr-color-text-secondary: #64748b;
-  }
+/* Step rows */
+.winr-how-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
 }
 
-/* High contrast support */
-@media (prefers-contrast: high) {
-  .winr-modal {
-    border: 2px solid var(--winr-color-text);
-  }
-  
-  .winr-form-input {
-    border: 2px solid var(--winr-color-text);
-  }
-  
-  .winr-primary-button {
-    border: 2px solid white;
-  }
+.winr-how-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  background: rgba(26,26,46,0.5);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Reduced motion support */
+.winr-how-step-number {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--winr-btn-color), rgba(91,76,255,0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--winr-btn-text);
+  flex-shrink: 0;
+}
+
+.winr-how-step-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.winr-how-step-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.winr-how-step-icon {
+  font-size: 14px;
+  color: var(--winr-glow);
+}
+
+.winr-how-step-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--winr-color-text);
+  margin: 0;
+}
+
+.winr-how-step-desc {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--winr-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Pro tip card */
+.winr-how-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(91,76,255,0.08);
+  border-radius: 16px;
+  border: 1px solid rgba(91,76,255,0.2);
+}
+
+.winr-how-tip-icon {
+  font-size: 20px;
+  color: var(--winr-btn-color);
+  flex-shrink: 0;
+}
+
+.winr-how-tip-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--winr-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Sticky CTA */
+.winr-how-footer {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 0 24px 20px 24px;
+  background: linear-gradient(180deg, transparent 0%, rgba(13,13,13,0.96) 40%);
+  z-index: 10;
+}
+
+.winr-how-gotit-btn {
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--winr-btn-text);
+  background: var(--winr-btn-color);
+  cursor: pointer;
+  font-family: var(--winr-font-family);
+  box-shadow: 0 8px 14px rgba(255,215,0,0.5);
+}
+
+/* ═══════════════════════════════════════════
+   Loading / Completed / Error states
+   ═══════════════════════════════════════════ */
+
+.winr-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  min-height: 300px;
+}
+
+.winr-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255,215,0,0.2);
+  border-top-color: var(--winr-glow);
+  border-radius: 50%;
+  animation: winr-spin 0.8s linear infinite;
+}
+
+@keyframes winr-spin {
+  to { transform: rotate(360deg); }
+}
+
+.winr-loading-text {
+  font-size: 15px;
+  color: var(--winr-color-text);
+}
+
+.winr-card-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 50px 24px;
+  text-align: center;
+}
+
+.winr-card-state h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--winr-color-text);
+  margin: 0;
+}
+
+.winr-card-state p {
+  font-size: 15px;
+  color: var(--winr-muted);
+  margin: 0;
+}
+
+.winr-card-state button {
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--winr-btn-text);
+  background: var(--winr-btn-color);
+  cursor: pointer;
+  font-family: var(--winr-font-family);
+}
+
+/* ═══════════════════════════════════════════
+   Utility animations
+   ═══════════════════════════════════════════ */
+
+@keyframes winr-bounce-in {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .winr-modal,
-  .winr-primary-button,
-  .winr-streak-day,
-  .winr-spinner,
-  .winr-success-icon {
-    animation: none;
+  .winr-modal, .winr-tile, .winr-loading-spinner,
+  .winr-tile.is-today .winr-tile-pill::after {
+    animation: none !important;
   }
-  
-  .winr-modal {
-    transform: none;
-  }
-  
-  .winr-primary-button:hover:not(:disabled) {
-    transform: none;
-  }
+  .winr-tile.is-today { transform: none; }
+}
+
+/* Responsive */
+@media (max-width: 380px) {
+  .winr-tile { width: 80px; height: 105px; }
+  .winr-tile-entries { font-size: 18px; }
 }
 `;
 }
@@ -496,24 +934,16 @@ export function generateModalStyles(theme: Theme): string {
  */
 export function injectStyles(theme: Theme): () => void {
   const styleId = 'winr-modal-styles';
-  
-  // Remove existing styles
   const existingStyle = document.getElementById(styleId);
-  if (existingStyle) {
-    existingStyle.remove();
-  }
+  if (existingStyle) existingStyle.remove();
 
-  // Create and inject new styles
   const style = document.createElement('style');
   style.id = styleId;
   style.textContent = generateModalStyles(theme);
   document.head.appendChild(style);
 
-  // Return cleanup function
   return () => {
     const element = document.getElementById(styleId);
-    if (element) {
-      element.remove();
-    }
+    if (element) element.remove();
   };
 }

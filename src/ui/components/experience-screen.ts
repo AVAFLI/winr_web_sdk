@@ -11,29 +11,54 @@ import { logger } from '../../services/logger';
 import { StreakDashboard } from './streak-dashboard';
 import { BonusEntriesScreen } from './bonus-entries';
 import { HowItWorksScreen } from './how-it-works';
+import { EmailCaptureScreen } from './email-capture';
+
+/**
+ * State machine matching iOS WINRExperienceViewModel.State
+ */
+type ExperienceState =
+  | { kind: 'loading' }
+  | { kind: 'emailCapture' }
+  | { kind: 'streak'; claimedToday: boolean }
+  | { kind: 'bonus'; baseEntries: number }
+  | { kind: 'howItWorks' }
+  | { kind: 'completed'; totalEntries: number }
+  | { kind: 'error'; message: string };
 
 interface ExperienceCallbacks {
   onComplete: (result: DailyEntryGrant) => void;
   onError: (error: WINRError) => void;
   onEmailRequired: () => void;
+  onClose?: () => void;
+  onShowInfo?: () => void;
+  onHideInfo?: () => void;
 }
 
 /**
- * Main experience screen component
+ * Main experience screen — matches iOS WINRExperienceView.swift
+ * Implements state machine: loading → emailCapture → streak → bonus → completed
  */
 export class ExperienceScreen {
   private element: HTMLElement | null = null;
+  private contentEl: HTMLElement | null = null;
   private callbacks?: ExperienceCallbacks;
-  private streakDashboard?: StreakDashboard;
-  private bonusSection?: BonusEntriesScreen;
-  private howItWorksSection?: HowItWorksScreen;
-  private isProcessing: boolean = false;
   private campaignModel: CampaignModel | null = null;
+  private state: ExperienceState = { kind: 'loading' };
+  private previousState: ExperienceState | null = null;
+  private isProcessing = false;
+
+  // Track header update callback for modal
+  public onHeaderUpdate?: (state: {
+    showBack: boolean;
+    showInfo: boolean;
+  }) => void;
 
   constructor(
-    campaign: Campaign | null,
+    private campaign: Campaign | null,
     private streakState: StreakState | null,
-    private sdkConfig: SDKConfig | null
+    private sdkConfig: SDKConfig | null,
+    private claimedToday = false,
+    private hasEmail = false
   ) {
     this.campaignModel = campaign ? CampaignModel.fromJSON(campaign) : null;
   }
@@ -46,147 +71,222 @@ export class ExperienceScreen {
     this.element = document.createElement('div');
     this.element.className = 'winr-experience-screen';
 
-    // Check if campaign is active
-    if (!this.campaignModel) {
-      this.renderNoCampaign();
-      return this.element;
+    // Content container (screens render into this)
+    this.contentEl = document.createElement('div');
+    this.contentEl.style.width = '100%';
+    this.contentEl.style.height = '100%';
+    this.element.appendChild(this.contentEl);
+
+    // Start state machine
+    if (!this.campaignModel || !this.campaignModel.isActive()) {
+      this.transitionTo({ kind: 'error', message: 'No active campaign at the moment.' });
+    } else if (!this.hasEmail) {
+      this.transitionTo({ kind: 'emailCapture' });
+    } else if (!this.claimedToday) {
+      this.transitionTo({ kind: 'streak', claimedToday: false });
+    } else {
+      this.transitionTo({ kind: 'streak', claimedToday: true });
     }
 
-    if (!this.isCampaignActive()) {
-      this.renderInactiveCampaign();
-      return this.element;
-    }
-
-    // Render main experience
-    this.renderMainExperience();
     return this.element;
   }
 
-  private renderMainExperience(): void {
-    if (!this.element) return;
+  /** Navigate to How It Works (called from header info button) */
+  public showHowItWorks(): void {
+    this.previousState = this.state;
+    this.transitionTo({ kind: 'howItWorks' });
+  }
 
-    // Streak dashboard
-    this.streakDashboard = new StreakDashboard(
-      this.campaignModel!,
+  /** Navigate back from How It Works */
+  public hideHowItWorks(): void {
+    if (this.previousState) {
+      this.transitionTo(this.previousState);
+      this.previousState = null;
+    }
+  }
+
+  // ── State machine ──
+
+  private transitionTo(newState: ExperienceState): void {
+    this.state = newState;
+    this.renderState();
+    this.notifyHeader();
+  }
+
+  private notifyHeader(): void {
+    const isHowItWorks = this.state.kind === 'howItWorks';
+    const infoAvailable = this.state.kind === 'streak' || this.state.kind === 'emailCapture';
+
+    this.onHeaderUpdate?.({
+      showBack: isHowItWorks,
+      showInfo: infoAvailable && !isHowItWorks,
+    });
+  }
+
+  private renderState(): void {
+    if (!this.contentEl) return;
+    this.contentEl.innerHTML = '';
+
+    switch (this.state.kind) {
+      case 'loading':
+        this.renderLoading();
+        break;
+      case 'emailCapture':
+        this.renderEmailCapture();
+        break;
+      case 'streak':
+        this.renderStreak(this.state.claimedToday);
+        break;
+      case 'bonus':
+        this.renderBonus(this.state.baseEntries);
+        break;
+      case 'howItWorks':
+        this.renderHowItWorks();
+        break;
+      case 'completed':
+        this.renderCompleted(this.state.totalEntries);
+        break;
+      case 'error':
+        this.renderError(this.state.message);
+        break;
+    }
+  }
+
+  // ── Renderers ──
+
+  private renderLoading(): void {
+    const el = document.createElement('div');
+    el.className = 'winr-loading-state';
+    el.innerHTML = `
+      <div class="winr-loading-spinner"></div>
+      <span class="winr-loading-text">Loading today's reward…</span>
+    `;
+    this.contentEl!.appendChild(el);
+  }
+
+  private renderEmailCapture(): void {
+    const screen = new EmailCaptureScreen(
+      this.sdkConfig,
+      this.campaign,
+      this.sdkConfig?.rulesUrl || this.campaign?.rulesUrl,
+      undefined // prefillEmail
+    );
+    screen.setCallbacks({
+      onSubmitted: () => {
+        this.hasEmail = true;
+        this.transitionTo({ kind: 'streak', claimedToday: false });
+      },
+      onError: (err) => this.callbacks?.onError(err),
+    });
+    this.contentEl!.appendChild(screen.render());
+  }
+
+  private renderStreak(claimedToday: boolean): void {
+    if (!this.campaignModel) return;
+
+    const dashboard = new StreakDashboard(
+      this.campaignModel,
       this.streakState,
       this.sdkConfig
     );
-
-    // Stats section
-    const statsElement = this.createStatsSection();
-
-    // Main claim button
-    const claimSection = this.createClaimSection();
-
-    // Bonus entries section (assuming we have a rewarded video provider)
-    this.bonusSection = new BonusEntriesScreen(
-      null, // TODO: Pass actual rewarded video provider
-      50 // Max bonus entries
-    );
-    this.bonusSection.setCallbacks({
-      onBonusEarned: this.handleBonusEarned.bind(this),
-      onError: this.handleBonusError.bind(this),
-      onClose: this.handleBonusClose.bind(this),
+    dashboard.setClaimedToday(claimedToday);
+    dashboard.setCallbacks({
+      onClaim: () => this.handleClaim(),
+      onClose: () => this.callbacks?.onClose?.(),
     });
-
-    // How it works section
-    this.howItWorksSection = new HowItWorksScreen();
-
-    // Assemble the screen
-    this.element.innerHTML = '';
-    this.element.appendChild(this.streakDashboard.render());
-    this.element.appendChild(statsElement);
-    this.element.appendChild(claimSection);
-    
-    if (this.campaignModel!.hasAdsEnabled()) {
-      this.element.appendChild(this.bonusSection.render());
-    }
-    
-    this.element.appendChild(this.howItWorksSection.render());
+    this.contentEl!.appendChild(dashboard.render());
   }
 
-  private createStatsSection(): HTMLElement {
-    const stats = document.createElement('div');
-    stats.className = 'winr-stats';
+  private renderBonus(baseEntries: number): void {
+    const bonus = new BonusEntriesScreen(null, baseEntries);
+    bonus.setCallbacks({
+      onBonusEarned: (entries) => {
+        const total = (this.streakState?.totalEntriesEarned || 0) + baseEntries + entries;
+        this.transitionTo({ kind: 'completed', totalEntries: total });
+        this.callbacks?.onComplete({
+          entries: baseEntries + entries,
+          streakDay: this.streakState?.currentDay || 1,
+          totalEntries: total,
+        });
+      },
+      onClose: () => {
+        const total = (this.streakState?.totalEntriesEarned || 0) + baseEntries;
+        this.transitionTo({ kind: 'completed', totalEntries: total });
+        this.callbacks?.onComplete({
+          entries: baseEntries,
+          streakDay: this.streakState?.currentDay || 1,
+          totalEntries: total,
+        });
+      },
+      onError: (err) => this.callbacks?.onError(err),
+    });
+    this.contentEl!.appendChild(bonus.render());
+  }
 
-    const totalEntries = this.streakState?.totalEntriesEarned || 0;
-    const currentDay = this.streakState?.currentDay || 1;
-    const daysRemaining = this.campaignModel?.daysRemaining() || 0;
+  private renderHowItWorks(): void {
+    const hiw = new HowItWorksScreen();
+    hiw.setCallbacks({
+      onClose: () => this.hideHowItWorks(),
+    });
+    this.contentEl!.appendChild(hiw.render());
+  }
 
-    stats.innerHTML = `
-      <div class="winr-stat">
-        <span class="winr-stat-value">${totalEntries.toLocaleString()}</span>
-        <span class="winr-stat-label">Total Entries</span>
-      </div>
-      <div class="winr-stat">
-        <span class="winr-stat-value">${currentDay}</span>
-        <span class="winr-stat-label">Current Day</span>
-      </div>
-      <div class="winr-stat">
-        <span class="winr-stat-value">${daysRemaining}</span>
-        <span class="winr-stat-label">Days Left</span>
-      </div>
+  private renderCompleted(totalEntries: number): void {
+    const el = document.createElement('div');
+    el.className = 'winr-card-state';
+    el.innerHTML = `
+      <h2>Entries Claimed!</h2>
+      <p>+${totalEntries} entries added to this month's drawing.</p>
     `;
-
-    return stats;
+    const btn = document.createElement('button');
+    btn.textContent = 'Close';
+    btn.addEventListener('click', () => this.callbacks?.onClose?.());
+    el.appendChild(btn);
+    this.contentEl!.appendChild(el);
   }
 
-  private createClaimSection(): HTMLElement {
-    const section = document.createElement('div');
-    section.className = 'winr-actions';
-
-    const canClaim = this.canClaimToday();
-    const buttonText = this.getClaimButtonText();
-    const todayEntries = this.getTodayEntries();
-
-    section.innerHTML = `
-      <button 
-        class="winr-primary-button" 
-        id="winr-claim-button"
-        ${!canClaim ? 'disabled' : ''}
-      >
-        <span id="winr-button-text">${buttonText}</span>
-      </button>
-      ${todayEntries > 0 ? `
-        <p style="text-align: center; color: var(--winr-color-text-secondary); font-size: var(--winr-font-size-sm); margin: 0;">
-          Claim ${todayEntries} entries for day ${this.streakState?.currentDay || 1}
-        </p>
-      ` : ''}
+  private renderError(message: string): void {
+    const el = document.createElement('div');
+    el.className = 'winr-card-state';
+    el.innerHTML = `
+      <h2>Something went wrong.</h2>
+      <p>${message || 'Please try again later.'}</p>
     `;
-
-    // Add click handler
-    const claimButton = section.querySelector('#winr-claim-button') as HTMLButtonElement;
-    claimButton?.addEventListener('click', this.handleClaimRequest.bind(this));
-
-    return section;
+    const btn = document.createElement('button');
+    btn.textContent = 'Close';
+    btn.addEventListener('click', () => this.callbacks?.onClose?.());
+    el.appendChild(btn);
+    this.contentEl!.appendChild(el);
   }
 
-  private async handleClaimRequest(): Promise<void> {
-    if (this.isProcessing || !this.canClaimToday()) return;
+  // ── Actions ──
 
+  private async handleClaim(): Promise<void> {
+    if (this.isProcessing) return;
     this.isProcessing = true;
-    this.updateClaimButton(true, 'Claiming...');
 
     try {
       logger.debug('Claiming daily entries...');
 
-      // TODO: Call API through WINR SDK instance
-      // For now, simulate the response
-      const mockResult: DailyEntryGrant = {
-        entries: this.getTodayEntries(),
-        streakDay: this.streakState?.currentDay || 1,
-        totalEntries: (this.streakState?.totalEntriesEarned || 0) + this.getTodayEntries(),
+      const currentDay = this.streakState?.currentDay || 1;
+      const entries = this.campaignModel?.getBaseEntries(currentDay) || 0;
+
+      // TODO: Call backend API
+      const result: DailyEntryGrant = {
+        entries,
+        streakDay: currentDay,
+        totalEntries: (this.streakState?.totalEntriesEarned || 0) + entries,
       };
 
-      // Check if we need email first
-      if (this.needsEmailCapture()) {
-        this.callbacks?.onEmailRequired();
-        return;
+      this.claimedToday = true;
+
+      // If campaign has ads, go to bonus; otherwise complete
+      if (this.campaignModel?.hasAdsEnabled() && this.campaignModel.doublingEnabled) {
+        this.transitionTo({ kind: 'bonus', baseEntries: entries });
+      } else {
+        this.transitionTo({ kind: 'completed', totalEntries: result.totalEntries });
+        this.callbacks?.onComplete(result);
       }
-
-      // Success
-      this.callbacks?.onComplete(mockResult);
-
     } catch (error) {
       logger.error('Claim failed:', error);
       this.callbacks?.onError(
@@ -196,170 +296,8 @@ export class ExperienceScreen {
           error instanceof Error ? error : undefined
         )
       );
-      this.updateClaimButton(false, this.getClaimButtonText());
     } finally {
       this.isProcessing = false;
     }
-  }
-
-  private async handleBonusClaimRequest(): Promise<void> {
-    if (this.isProcessing) return;
-
-    this.isProcessing = true;
-
-    try {
-      logger.debug('Claiming bonus entries...');
-
-      // Show rewarded video
-      // TODO: Implement actual rewarded video flow
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate ad
-
-      // TODO: Call API to claim bonus
-      const bonusAmount = 50; // From ad config
-
-      // Update total entries
-      if (this.streakState) {
-        this.streakState.totalEntriesEarned += bonusAmount;
-      }
-
-      // Update UI
-      this.refreshStats();
-
-      logger.debug(`Claimed ${bonusAmount} bonus entries`);
-
-    } catch (error) {
-      logger.error('Bonus claim failed:', error);
-      this.callbacks?.onError(
-        new WINRError(
-          WINRErrorCode.RewardedVideoUnavailable,
-          'Bonus entries not available. Please try again later.',
-          error instanceof Error ? error : undefined
-        )
-      );
-    } finally {
-      this.isProcessing = false;
-    }
-  }
-
-  private updateClaimButton(loading: boolean, text: string): void {
-    const button = this.element?.querySelector('#winr-claim-button') as HTMLButtonElement;
-    const buttonText = this.element?.querySelector('#winr-button-text');
-    
-    if (!button || !buttonText) return;
-
-    button.disabled = loading;
-    
-    if (loading) {
-      buttonText.innerHTML = `<span class="winr-spinner"></span> ${text}`;
-    } else {
-      buttonText.textContent = text;
-    }
-  }
-
-  private refreshStats(): void {
-    const statsElement = this.element?.querySelector('.winr-stats');
-    if (!statsElement) return;
-
-    const totalEntries = this.streakState?.totalEntriesEarned || 0;
-    const totalElement = statsElement.querySelector('.winr-stat-value');
-    if (totalElement) {
-      totalElement.textContent = totalEntries.toLocaleString();
-    }
-  }
-
-  private canClaimToday(): boolean {
-    if (!this.streakState) return true; // First time claiming
-    
-    // Check if already claimed today
-    if (!this.streakState.lastClaimedDate) return true;
-    
-    const today = new Date();
-    const lastClaim = this.streakState.lastClaimedDate;
-    
-    return (
-      today.getUTCFullYear() !== lastClaim.getUTCFullYear() ||
-      today.getUTCMonth() !== lastClaim.getUTCMonth() ||
-      today.getUTCDate() !== lastClaim.getUTCDate()
-    );
-  }
-
-  private getTodayEntries(): number {
-    if (!this.campaignModel) return 0;
-    const day = this.streakState?.currentDay || 1;
-    return this.campaignModel.getBaseEntries(day);
-  }
-
-  private getClaimButtonText(): string {
-    if (!this.canClaimToday()) {
-      return 'Come back tomorrow';
-    }
-    
-    return this.sdkConfig?.copy?.dailyClaimButton || 'Claim Daily Entries';
-  }
-
-  private needsEmailCapture(): boolean {
-    // TODO: Check if user has submitted email
-    // For now, assume email is needed if age gate is enabled
-    return this.sdkConfig?.ageGateEnabled === true;
-  }
-
-  private isCampaignActive(): boolean {
-    return this.campaignModel?.isActive() === true;
-  }
-
-  private renderNoCampaign(): void {
-    if (!this.element) return;
-
-    this.element.innerHTML = `
-      <div style="text-align: center; padding: var(--winr-spacing-xl);">
-        <h3 style="color: var(--winr-color-text); margin-bottom: var(--winr-spacing-md);">
-          No Active Campaign
-        </h3>
-        <p style="color: var(--winr-color-text-secondary); margin: 0;">
-          There are no active campaigns at the moment. Check back soon!
-        </p>
-      </div>
-    `;
-  }
-
-  private renderInactiveCampaign(): void {
-    if (!this.element) return;
-
-    const startDate = this.campaignModel?.startDate ? new Date(this.campaignModel.startDate) : null;
-    const endDate = this.campaignModel?.endDate ? new Date(this.campaignModel.endDate) : null;
-    const now = new Date();
-
-    let message = 'This campaign is not currently active.';
-    
-    if (startDate && startDate > now) {
-      message = `This campaign starts on ${startDate.toLocaleDateString()}.`;
-    } else if (endDate && endDate < now) {
-      message = `This campaign ended on ${endDate.toLocaleDateString()}.`;
-    }
-
-    this.element.innerHTML = `
-      <div style="text-align: center; padding: var(--winr-spacing-xl);">
-        <h3 style="color: var(--winr-color-text); margin-bottom: var(--winr-spacing-md);">
-          ${this.campaignModel?.title || 'Campaign Inactive'}
-        </h3>
-        <p style="color: var(--winr-color-text-secondary); margin: 0;">
-          ${message}
-        </p>
-      </div>
-    `;
-  }
-
-  private handleBonusEarned(entries: number): void {
-    logger.info(`Bonus entries earned: ${entries}`);
-    // TODO: Update total entries display
-  }
-
-  private handleBonusError(error: WINRError): void {
-    logger.error('Bonus entries error:', error);
-    this.callbacks?.onError?.(error);
-  }
-
-  private handleBonusClose(): void {
-    logger.debug('Bonus entries screen closed');
   }
 }

@@ -3,12 +3,16 @@ import { CampaignModel } from '../../domain/campaign';
 import { StreakDayTile } from './streak-day-tile';
 
 /**
- * Streak dashboard component showing the 6-day streak progress
+ * Streak dashboard — matches iOS StreakDashboardView.swift
+ * Hero logo + prize → horizontal scroll tiles → bonus progress → sticky footer
  */
 export class StreakDashboard {
   private element: HTMLElement | null = null;
   private dayTiles: StreakDayTile[] = [];
   private campaignModel: CampaignModel = null!;
+  private claimedToday = false;
+  private onClaim?: () => void;
+  private onClose?: () => void;
 
   constructor(
     campaign: Campaign,
@@ -18,182 +22,233 @@ export class StreakDashboard {
     this.campaignModel = CampaignModel.fromJSON(campaign);
   }
 
+  public setCallbacks(callbacks: {
+    onClaim?: () => void;
+    onClose?: () => void;
+  }): void {
+    this.onClaim = callbacks.onClaim;
+    this.onClose = callbacks.onClose;
+  }
+
+  public setClaimedToday(claimed: boolean): void {
+    this.claimedToday = claimed;
+  }
+
   public render(): HTMLElement {
     this.element = document.createElement('div');
     this.element.className = 'winr-streak-dashboard';
-
-    // Title
-    const title = document.createElement('h2');
-    title.className = 'winr-streak-title';
-    title.textContent = this.getStreakMessage();
-    this.element.appendChild(title);
-
-    // Streak grid
-    const grid = this.createStreakGrid();
-    this.element.appendChild(grid);
-
+    this.buildUI();
     return this.element;
   }
 
-  private createStreakGrid(): HTMLElement {
-    const grid = document.createElement('div');
-    grid.className = 'winr-streak-grid';
+  private formatPrize(value: number): string {
+    return '$' + value.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' CASH';
+  }
 
-    // Create tiles for days 1-6
-    for (let day = 1; day <= 6; day++) {
+  private buildUI(): void {
+    if (!this.element) return;
+    this.element.innerHTML = '';
+
+    const ladder = this.campaignModel.streakLadder;
+    const currentDay = this.streakState?.currentDay || 1;
+    const entriesToday = this.campaignModel.getBaseEntries(currentDay);
+
+    // ── Scrollable content ──
+    const scroll = document.createElement('div');
+    scroll.className = 'winr-streak-scroll';
+
+    // Headroom
+    const spacer = document.createElement('div');
+    spacer.style.height = '20px';
+    scroll.appendChild(spacer);
+
+    // Hero logo
+    const hero = document.createElement('div');
+    hero.className = 'winr-streak-hero';
+    const logoUrl = this.sdkConfig?.branding?.logoUrl;
+    if (logoUrl) {
+      const img = document.createElement('img');
+      img.src = logoUrl;
+      img.alt = 'Logo';
+      img.className = 'winr-streak-hero-logo';
+      hero.appendChild(img);
+    }
+    scroll.appendChild(hero);
+
+    // Prize banner
+    const banner = document.createElement('div');
+    banner.className = 'winr-streak-prize-banner';
+    const prizeTitle = document.createElement('h2');
+    prizeTitle.className = 'winr-streak-prize-title';
+    prizeTitle.textContent = this.campaignModel
+      ? `WIN ${this.formatPrize(this.campaignModel.prizeValue)}!`
+      : 'WIN PRIZES!';
+    const prizeSub = document.createElement('p');
+    prizeSub.className = 'winr-streak-prize-subtitle';
+    prizeSub.textContent = this.sdkConfig?.copy?.streakMessage
+      || 'Keep your daily streak alive to unlock more entries.';
+    banner.appendChild(prizeTitle);
+    banner.appendChild(prizeSub);
+    scroll.appendChild(banner);
+
+    // Section label
+    const label = document.createElement('div');
+    label.className = 'winr-streak-section-label';
+    label.textContent = 'Upcoming rewards';
+    scroll.appendChild(label);
+
+    // Carousel
+    const carousel = document.createElement('div');
+    carousel.className = 'winr-streak-carousel';
+    const row = document.createElement('div');
+    row.className = 'winr-streak-tiles-row';
+
+    this.dayTiles = [];
+    for (let i = 0; i < ladder.length; i++) {
+      const day = i + 1;
+      const isClaimed = day < currentDay || (day === currentDay && this.claimedToday);
+      const isToday = day === currentDay && !this.claimedToday;
+
       const tile = new StreakDayTile({
         day,
-        entries: this.campaignModel.getBaseEntries(day),
-        isCompleted: this.isDayCompleted(day),
-        isCurrent: this.isCurrentDay(day),
-        isToday: this.isTodayForDay(day),
+        entries: ladder[i] ?? 0,
+        isCompleted: isClaimed,
+        isCurrent: day === currentDay,
+        isToday,
       });
-
       this.dayTiles.push(tile);
-      grid.appendChild(tile.render());
+      row.appendChild(tile.render());
     }
 
-    return grid;
-  }
+    carousel.appendChild(row);
+    scroll.appendChild(carousel);
 
-  private isDayCompleted(day: number): boolean {
-    if (!this.streakState) return false;
-    return day < (this.streakState.currentDay || 1);
-  }
+    // Bonus progress pills
+    const config = this.campaignModel;
+    if (config.streakConfig) {
+      const bonusSection = document.createElement('div');
+      bonusSection.className = 'winr-bonus-progress-section';
 
-  private isCurrentDay(day: number): boolean {
-    const currentDay = this.streakState?.currentDay || 1;
-    return day === currentDay;
-  }
+      const bonusLabel = document.createElement('div');
+      bonusLabel.className = 'winr-bonus-progress-label';
+      bonusLabel.textContent = 'Bonus Progress';
+      bonusSection.appendChild(bonusLabel);
 
-  private isTodayForDay(day: number): boolean {
-    // Check if today would be this day in the streak
-    if (!this.streakState?.lastClaimedDate) {
-      return day === 1; // First time, today is day 1
+      const pillRow = document.createElement('div');
+      pillRow.className = 'winr-bonus-progress-row';
+
+      // Weekly
+      const sc = config.streakConfig;
+      pillRow.appendChild(this.createBonusPill(
+        'Week',
+        this.streakState?.weeklyCurrent ?? 0,
+        sc.weeklyBonusThreshold ?? 5,
+        sc.weeklyBonusEntries ?? 0
+      ));
+
+      // Monthly
+      pillRow.appendChild(this.createBonusPill(
+        'Month',
+        this.streakState?.monthlyCurrent ?? 0,
+        sc.monthlyBonusThreshold ?? 20,
+        sc.monthlyBonusEntries ?? 0
+      ));
+
+      bonusSection.appendChild(pillRow);
+      scroll.appendChild(bonusSection);
     }
 
-    const today = new Date();
-    const lastClaim = this.streakState.lastClaimedDate;
-    
-    // Check if already claimed today
-    const alreadyClaimed = (
-      today.getUTCFullYear() === lastClaim.getUTCFullYear() &&
-      today.getUTCMonth() === lastClaim.getUTCMonth() &&
-      today.getUTCDate() === lastClaim.getUTCDate()
-    );
+    this.element.appendChild(scroll);
 
-    if (alreadyClaimed) {
-      return false; // Can't claim again today
-    }
+    // ── Sticky footer ──
+    const footer = document.createElement('div');
+    footer.className = 'winr-streak-footer';
 
-    // Check if this is the next day in sequence
-    const daysDiff = Math.floor((today.getTime() - lastClaim.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff === 1) {
-      // Next day in sequence
-      return day === Math.min(this.streakState.currentDay + 1, 6);
-    } else if (daysDiff > 1) {
-      // Streak broken, start over
-      return day === 1;
-    }
-
-    return false;
-  }
-
-  private getStreakMessage(): string {
-    const customMessage = this.sdkConfig?.copy?.streakMessage;
-    if (customMessage) return customMessage;
-
-    if (!this.streakState) {
-      return 'Start Your Streak Today!';
-    }
-
-    const currentDay = this.streakState.currentDay;
-    const canClaimToday = this.canClaimToday();
-
-    if (canClaimToday) {
-      if (currentDay === 1) {
-        return 'Start Your Streak Today!';
-      } else {
-        return `Continue Your ${currentDay}-Day Streak!`;
-      }
+    if (this.claimedToday) {
+      footer.innerHTML = `
+        <div class="winr-claimed-icon">✅</div>
+        <div class="winr-streak-footer-title">Today's entries claimed!</div>
+        <div class="winr-streak-footer-desc">Come back tomorrow to continue your streak.</div>
+      `;
+      const doneBtn = document.createElement('button');
+      doneBtn.className = 'winr-done-button';
+      doneBtn.textContent = 'Done';
+      doneBtn.addEventListener('click', () => this.onClose?.());
+      footer.appendChild(doneBtn);
     } else {
-      return `${currentDay}-Day Streak Complete`;
+      const ftTitle = document.createElement('div');
+      ftTitle.className = 'winr-streak-footer-title';
+      ftTitle.textContent = `Day ${currentDay} reward`;
+
+      const ftDesc = document.createElement('div');
+      ftDesc.className = 'winr-streak-footer-desc';
+      ftDesc.textContent = `Claim ${entriesToday} entries for today's visit to keep your streak alive.`;
+
+      const claimBtn = document.createElement('button');
+      claimBtn.className = 'winr-claim-button';
+      claimBtn.textContent = this.sdkConfig?.copy?.dailyClaimButton || `Claim ${entriesToday} Entries`;
+      claimBtn.addEventListener('click', () => this.onClaim?.());
+
+      footer.appendChild(ftTitle);
+      footer.appendChild(ftDesc);
+      footer.appendChild(claimBtn);
     }
+
+    this.element.appendChild(footer);
   }
 
-  private canClaimToday(): boolean {
-    if (!this.streakState?.lastClaimedDate) return true;
-    
-    const today = new Date();
-    const lastClaim = this.streakState.lastClaimedDate;
-    
-    return (
-      today.getUTCFullYear() !== lastClaim.getUTCFullYear() ||
-      today.getUTCMonth() !== lastClaim.getUTCMonth() ||
-      today.getUTCDate() !== lastClaim.getUTCDate()
-    );
+  private createBonusPill(
+    label: string,
+    current: number,
+    target: number,
+    bonus: number
+  ): HTMLElement {
+    const pill = document.createElement('div');
+    pill.className = 'winr-bonus-pill';
+
+    const pct = Math.min(100, (current / target) * 100);
+    const earned = current >= target;
+
+    pill.innerHTML = `
+      <div class="winr-bonus-pill-header">
+        <span class="winr-bonus-pill-label">${label}</span>
+        <span class="winr-bonus-pill-count">${current}/${target} days</span>
+      </div>
+      <div class="winr-bonus-pill-bar">
+        <div class="winr-bonus-pill-fill" style="width: ${pct}%"></div>
+      </div>
+      <div class="winr-bonus-pill-footer ${earned ? 'earned' : 'pending'}">
+        ${earned ? '✓ Bonus earned!' : `+${bonus} entries`}
+      </div>
+    `;
+    return pill;
   }
 
-  /**
-   * Update the dashboard with new streak state
-   */
+  // ── Public API (keep backward compatibility) ──
+
   public updateStreakState(newState: StreakState): void {
     this.streakState = newState;
-    
-    // Update title
-    const titleElement = this.element?.querySelector('.winr-streak-title');
-    if (titleElement) {
-      titleElement.textContent = this.getStreakMessage();
-    }
-
-    // Update tiles
-    this.dayTiles.forEach((tile, index) => {
-      const day = index + 1;
-      tile.update({
-        day,
-        entries: this.campaignModel.getBaseEntries(day),
-        isCompleted: this.isDayCompleted(day),
-        isCurrent: this.isCurrentDay(day),
-        isToday: this.isTodayForDay(day),
-      });
-    });
+    this.buildUI();
   }
 
-  /**
-   * Animate claim completion
-   */
   public animateClaimComplete(day: number): void {
     const tile = this.dayTiles[day - 1];
-    if (tile) {
-      tile.animateCompletion();
-    }
+    if (tile) tile.animateCompletion();
   }
 
-  /**
-   * Get the current day's entries amount
-   */
   public getCurrentDayEntries(): number {
     const currentDay = this.streakState?.currentDay || 1;
     return this.campaignModel.getBaseEntries(currentDay);
   }
 
-  /**
-   * Check if streak is broken and needs reset
-   */
   public isStreakBroken(): boolean {
     if (!this.streakState?.lastClaimedDate) return false;
-
     const today = new Date();
     const lastClaim = this.streakState.lastClaimedDate;
     const daysDiff = Math.floor((today.getTime() - lastClaim.getTime()) / (1000 * 60 * 60 * 24));
-
     return daysDiff > 1;
   }
 
-  /**
-   * Get streak statistics
-   */
   public getStreakStats(): {
     currentDay: number;
     totalEntries: number;
@@ -204,9 +259,20 @@ export class StreakDashboard {
     return {
       currentDay: this.streakState?.currentDay || 1,
       totalEntries: this.streakState?.totalEntriesEarned || 0,
-      daysCompleted: this.dayTiles.filter(tile => tile.isCompleted()).length,
+      daysCompleted: this.dayTiles.filter(t => t.isCompleted()).length,
       canClaimToday: this.canClaimToday(),
       isStreakBroken: this.isStreakBroken(),
     };
+  }
+
+  private canClaimToday(): boolean {
+    if (!this.streakState?.lastClaimedDate) return true;
+    const today = new Date();
+    const last = this.streakState.lastClaimedDate;
+    return (
+      today.getUTCFullYear() !== last.getUTCFullYear() ||
+      today.getUTCMonth() !== last.getUTCMonth() ||
+      today.getUTCDate() !== last.getUTCDate()
+    );
   }
 }
