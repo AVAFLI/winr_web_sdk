@@ -62,17 +62,10 @@ export class StreakDashboard {
     spacer.style.height = '20px';
     scroll.appendChild(spacer);
 
-    // Hero logo
+    // Hero media or logo
     const hero = document.createElement('div');
     hero.className = 'winr-streak-hero';
-    const logoUrl = this.sdkConfig?.branding?.logoUrl;
-    if (logoUrl) {
-      const img = document.createElement('img');
-      img.src = logoUrl;
-      img.alt = 'Logo';
-      img.className = 'winr-streak-hero-logo';
-      hero.appendChild(img);
-    }
+    this.renderHeroMedia(hero);
     scroll.appendChild(hero);
 
     // Prize banner
@@ -80,9 +73,12 @@ export class StreakDashboard {
     banner.className = 'winr-streak-prize-banner';
     const prizeTitle = document.createElement('h2');
     prizeTitle.className = 'winr-streak-prize-title';
-    prizeTitle.textContent = this.campaignModel
-      ? `WIN ${this.formatPrize(this.campaignModel.prizeValue)}!`
-      : 'WIN PRIZES!';
+    
+    const prizeHeadline = this.sdkConfig?.copy?.streakDashboard?.prizeHeadline 
+      ?? this.sdkConfig?.copy?.emailCapture?.prizeHeadline;
+    prizeTitle.textContent = prizeHeadline 
+      ?? (this.campaignModel ? `WIN ${this.formatPrize(this.campaignModel.prizeValue)}!` : 'WIN PRIZES!');
+    
     const prizeSub = document.createElement('p');
     prizeSub.className = 'winr-streak-prize-subtitle';
     prizeSub.textContent = this.sdkConfig?.copy?.streakDashboard?.streakMessage
@@ -294,5 +290,36 @@ export class StreakDashboard {
       today.getUTCMonth() !== last.getUTCMonth() ||
       today.getUTCDate() !== last.getUTCDate()
     );
+  }
+
+  private renderHeroMedia(heroElement: HTMLElement): void {
+    const streakMedia = this.sdkConfig?.media?.streakDashboard;
+    
+    if (streakMedia?.lottieUrl) {
+      // For future Lottie support, fallback to image for now
+      const img = document.createElement('img');
+      img.src = streakMedia.imageUrl || streakMedia.lottieUrl;
+      img.alt = 'Hero Media';
+      img.className = 'winr-streak-hero-logo';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroElement.appendChild(img);
+    } else if (streakMedia?.imageUrl) {
+      const img = document.createElement('img');
+      img.src = streakMedia.imageUrl;
+      img.alt = 'Hero Image';
+      img.className = 'winr-streak-hero-logo';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroElement.appendChild(img);
+    } else {
+      // Fallback to branding logo
+      const logoUrl = this.sdkConfig?.branding?.logoUrl;
+      if (logoUrl) {
+        const img = document.createElement('img');
+        img.src = logoUrl;
+        img.alt = 'Logo';
+        img.className = 'winr-streak-hero-logo';
+        heroElement.appendChild(img);
+      }
+    }
   }
 }

@@ -44,6 +44,9 @@ export class BonusEntriesScreen {
 
     const entries = this.maxBonusEntries;
 
+    // Hero media
+    this.renderHeroMedia();
+
     // Title
     const titleText = this.sdkConfig?.copy?.bonusEntries?.title ?? 'BONUS ENTRIES';
     const title = document.createElement('h2');
@@ -114,6 +117,35 @@ export class BonusEntriesScreen {
           error instanceof Error ? error : undefined
         )
       );
+    }
+  }
+
+  private renderHeroMedia(): void {
+    if (!this.element) return;
+    
+    const bonusMedia = this.sdkConfig?.media?.bonusEntries;
+    if (!bonusMedia) return;
+
+    const heroWrap = document.createElement('div');
+    heroWrap.className = 'winr-hero-media';
+
+    if (bonusMedia.lottieUrl) {
+      // For future Lottie support, fallback to image for now
+      const img = document.createElement('img');
+      img.src = bonusMedia.imageUrl || bonusMedia.lottieUrl;
+      img.alt = 'Hero Media';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroWrap.appendChild(img);
+    } else if (bonusMedia.imageUrl) {
+      const img = document.createElement('img');
+      img.src = bonusMedia.imageUrl;
+      img.alt = 'Hero Image';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroWrap.appendChild(img);
+    }
+
+    if (heroWrap.children.length > 0) {
+      this.element.appendChild(heroWrap);
     }
   }
 }

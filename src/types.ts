@@ -204,6 +204,7 @@ export interface RegisterDeviceResponse {
 export interface SDKCopy {
   // Nested per-screen
   emailCapture?: {
+    prizeHeadline?: string;
     title?: string;
     subtitle?: string;
     emailLabel?: string;
@@ -215,6 +216,7 @@ export interface SDKCopy {
     emailConsentText?: string;
   };
   streakDashboard?: {
+    prizeHeadline?: string;
     streakMessage?: string;
     upcomingLabel?: string;
     claimButton?: string;
@@ -279,11 +281,27 @@ export interface SDKCopy {
   rulesLinkText?: string;
 }
 
+export interface ScreenMedia {
+  imageUrl?: string;
+  lottieUrl?: string;
+}
+
+export interface SDKMedia {
+  emailCapture?: ScreenMedia;
+  streakDashboard?: ScreenMedia;
+  bonusEntries?: ScreenMedia;
+  milestone?: ScreenMedia;
+  completed?: ScreenMedia;
+  howItWorks?: ScreenMedia;
+}
+
 export interface SDKConfig {
   /** Branding overrides */
   branding?: WINRBranding;
   /** Copy/text overrides */
   copy?: SDKCopy;
+  /** Media/asset overrides */
+  media?: SDKMedia;
   /** Rules URL override */
   rulesUrl?: string;
   /** Age gate enabled */

@@ -48,8 +48,10 @@ export class EmailCaptureScreen {
     if (!this.element) return;
 
     const logoUrl = this.sdkConfig?.branding?.logoUrl;
+    const prizeHeadline = this.sdkConfig?.copy?.emailCapture?.prizeHeadline;
     const welcomeTitle = this.sdkConfig?.copy?.emailCapture?.title 
       ?? this.sdkConfig?.copy?.welcomeTitle
+      ?? prizeHeadline
       ?? (this.campaign ? `WIN ${this.formatPrize(this.campaign.prizeValue)}!` : 'WIN PRIZES!');
     const welcomeSubtitle = this.sdkConfig?.copy?.emailCapture?.subtitle 
       ?? this.sdkConfig?.copy?.welcomeSubtitle
@@ -62,8 +64,11 @@ export class EmailCaptureScreen {
       ?? this.sdkConfig?.copy?.rulesLinkText 
       ?? 'Official Rules';
 
-    // Logo
-    if (logoUrl) {
+    // Hero media (Lottie, image, or logo)
+    this.renderHeroMedia();
+
+    // Logo (only if no custom hero media)
+    if (!this.hasCustomHeroMedia() && logoUrl) {
       const logoWrap = document.createElement('div');
       logoWrap.className = 'winr-email-logo';
       const img = document.createElement('img');
@@ -241,6 +246,40 @@ export class EmailCaptureScreen {
     if (errorEl) {
       errorEl.style.display = 'none';
       errorEl.textContent = '';
+    }
+  }
+
+  private hasCustomHeroMedia(): boolean {
+    const emailMedia = this.sdkConfig?.media?.emailCapture;
+    return !!(emailMedia?.lottieUrl || emailMedia?.imageUrl);
+  }
+
+  private renderHeroMedia(): void {
+    if (!this.element) return;
+    
+    const emailMedia = this.sdkConfig?.media?.emailCapture;
+    if (!emailMedia) return;
+
+    const heroWrap = document.createElement('div');
+    heroWrap.className = 'winr-hero-media';
+
+    if (emailMedia.lottieUrl) {
+      // For future Lottie support, fallback to image for now
+      const img = document.createElement('img');
+      img.src = emailMedia.imageUrl || emailMedia.lottieUrl;
+      img.alt = 'Hero Media';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroWrap.appendChild(img);
+    } else if (emailMedia.imageUrl) {
+      const img = document.createElement('img');
+      img.src = emailMedia.imageUrl;
+      img.alt = 'Hero Image';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroWrap.appendChild(img);
+    }
+
+    if (heroWrap.children.length > 0) {
+      this.element.appendChild(heroWrap);
     }
   }
 }

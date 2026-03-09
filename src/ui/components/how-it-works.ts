@@ -56,11 +56,20 @@ export class HowItWorksScreen {
     // Hero
     const hero = document.createElement('div');
     hero.className = 'winr-how-hero';
-    hero.innerHTML = `
-      <div class="winr-how-hero-emoji">🎰</div>
-      <h2 class="winr-how-hero-title">${title}</h2>
-      <p class="winr-how-hero-desc">${subtitle}</p>
-    `;
+    
+    // Hero media or default emoji
+    this.renderHeroMedia(hero);
+    
+    const heroTitle = document.createElement('h2');
+    heroTitle.className = 'winr-how-hero-title';
+    heroTitle.textContent = title;
+    
+    const heroDesc = document.createElement('p');
+    heroDesc.className = 'winr-how-hero-desc';
+    heroDesc.textContent = subtitle;
+    
+    hero.appendChild(heroTitle);
+    hero.appendChild(heroDesc);
     scroll.appendChild(hero);
 
     // Steps
@@ -110,5 +119,32 @@ export class HowItWorksScreen {
 
     footer.appendChild(btn);
     this.element.appendChild(footer);
+  }
+
+  private renderHeroMedia(heroElement: HTMLElement): void {
+    const howItWorksMedia = this.sdkConfig?.media?.howItWorks;
+    
+    if (howItWorksMedia?.lottieUrl) {
+      // For future Lottie support, fallback to image for now
+      const img = document.createElement('img');
+      img.src = howItWorksMedia.imageUrl || howItWorksMedia.lottieUrl;
+      img.alt = 'Hero Media';
+      img.className = 'winr-how-hero-emoji';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroElement.appendChild(img);
+    } else if (howItWorksMedia?.imageUrl) {
+      const img = document.createElement('img');
+      img.src = howItWorksMedia.imageUrl;
+      img.alt = 'Hero Image';
+      img.className = 'winr-how-hero-emoji';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroElement.appendChild(img);
+    } else {
+      // Fallback to default emoji
+      const emojiDiv = document.createElement('div');
+      emojiDiv.className = 'winr-how-hero-emoji';
+      emojiDiv.textContent = '🎰';
+      heroElement.appendChild(emojiDiv);
+    }
   }
 }

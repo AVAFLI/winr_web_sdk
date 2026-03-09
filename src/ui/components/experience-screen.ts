@@ -240,10 +240,18 @@ export class ExperienceScreen {
 
     const el = document.createElement('div');
     el.className = 'winr-card-state';
-    el.innerHTML = `
-      <h2>${title}</h2>
-      <p>${subtitle}</p>
-    `;
+    
+    // Hero media
+    this.renderHeroMedia(el, 'completed');
+    
+    const titleEl = document.createElement('h2');
+    titleEl.textContent = title;
+    el.appendChild(titleEl);
+    
+    const subtitleEl = document.createElement('p');
+    subtitleEl.textContent = subtitle;
+    el.appendChild(subtitleEl);
+    
     const btn = document.createElement('button');
     btn.textContent = closeText;
     btn.addEventListener('click', () => this.callbacks?.onClose?.());
@@ -308,6 +316,72 @@ export class ExperienceScreen {
       );
     } finally {
       this.isProcessing = false;
+    }
+  }
+
+  public renderMilestone(milestone: { day: number; bonusEntries: number; badge?: string }): void {
+    const title = this.sdkConfig?.copy?.milestone?.title ?? `Milestone Achieved!`;
+    const subtitle = (this.sdkConfig?.copy?.milestone?.subtitle ?? "You've reached day {day} and earned {bonusEntries} bonus entries!")
+      .replace("{day}", String(milestone.day))
+      .replace("{bonusEntries}", String(milestone.bonusEntries));
+    const continueText = this.sdkConfig?.copy?.milestone?.continueButton ?? "Continue";
+
+    const el = document.createElement('div');
+    el.className = 'winr-card-state';
+    
+    // Hero media
+    this.renderHeroMedia(el, 'milestone');
+    
+    const titleEl = document.createElement('h2');
+    titleEl.textContent = title;
+    el.appendChild(titleEl);
+    
+    const subtitleEl = document.createElement('p');
+    subtitleEl.textContent = subtitle;
+    el.appendChild(subtitleEl);
+    
+    if (milestone.badge) {
+      const badgeEl = document.createElement('div');
+      badgeEl.className = 'winr-milestone-badge';
+      badgeEl.textContent = `Badge: ${milestone.badge}`;
+      el.appendChild(badgeEl);
+    }
+    
+    const btn = document.createElement('button');
+    btn.textContent = continueText;
+    btn.addEventListener('click', () => this.callbacks?.onClose?.());
+    el.appendChild(btn);
+    
+    if (this.contentEl) {
+      this.contentEl.innerHTML = '';
+      this.contentEl.appendChild(el);
+    }
+  }
+
+  private renderHeroMedia(containerElement: HTMLElement, screenType: 'milestone' | 'completed'): void {
+    const media = this.sdkConfig?.media?.[screenType];
+    if (!media) return;
+
+    const heroWrap = document.createElement('div');
+    heroWrap.className = 'winr-hero-media';
+
+    if (media.lottieUrl) {
+      // For future Lottie support, fallback to image for now
+      const img = document.createElement('img');
+      img.src = media.imageUrl || media.lottieUrl;
+      img.alt = 'Hero Media';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroWrap.appendChild(img);
+    } else if (media.imageUrl) {
+      const img = document.createElement('img');
+      img.src = media.imageUrl;
+      img.alt = 'Hero Image';
+      img.style.cssText = 'max-width: 200px; max-height: 150px; object-fit: contain; border-radius: 12px;';
+      heroWrap.appendChild(img);
+    }
+
+    if (heroWrap.children.length > 0) {
+      containerElement.appendChild(heroWrap);
     }
   }
 }
