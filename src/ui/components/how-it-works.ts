@@ -1,4 +1,5 @@
 import { analyticsAdapter } from '../../services/analytics';
+import { SDKConfig } from '../../types';
 
 /**
  * How It Works screen — matches iOS HowItWorksView.swift
@@ -10,14 +11,7 @@ export class HowItWorksScreen {
     onClose?: () => void;
   } = {};
 
-  private readonly steps = [
-    { icon: '📅', title: 'Visit Daily', desc: 'Open the app each day to claim your daily entries.' },
-    { icon: '🔥', title: 'Build Your Streak', desc: 'Keep your streak alive — the longer it goes, the more entries you earn each day.' },
-    { icon: '▶️', title: 'Watch & Double', desc: 'Watch an optional short video to double your daily entries.' },
-    { icon: '🎁', title: 'Win Prizes', desc: 'Your entries go into the monthly prize drawing. More entries = better odds!' },
-  ];
-
-  constructor() {}
+  constructor(private sdkConfig: SDKConfig | null = null) {}
 
   public setCallbacks(callbacks: { onClose?: () => void }): void {
     this.callbacks = callbacks;
@@ -34,6 +28,27 @@ export class HowItWorksScreen {
   private buildUI(): void {
     if (!this.element) return;
 
+    // Get copy from config with fallbacks
+    const title = this.sdkConfig?.copy?.howItWorks?.title ?? 'How It Works';
+    const subtitle = this.sdkConfig?.copy?.howItWorks?.subtitle ?? 'Earn entries every day for a chance to win big.';
+    const step1Title = this.sdkConfig?.copy?.howItWorks?.step1Title ?? 'Visit Daily';
+    const step1Desc = this.sdkConfig?.copy?.howItWorks?.step1Desc ?? 'Open the app each day to claim your daily entries.';
+    const step2Title = this.sdkConfig?.copy?.howItWorks?.step2Title ?? 'Build Your Streak';
+    const step2Desc = this.sdkConfig?.copy?.howItWorks?.step2Desc ?? 'Keep your streak alive — the longer it goes, the more entries you earn each day.';
+    const step3Title = this.sdkConfig?.copy?.howItWorks?.step3Title ?? 'Watch & Double';
+    const step3Desc = this.sdkConfig?.copy?.howItWorks?.step3Desc ?? 'Watch an optional short video to double your daily entries.';
+    const step4Title = this.sdkConfig?.copy?.howItWorks?.step4Title ?? 'Win Prizes';
+    const step4Desc = this.sdkConfig?.copy?.howItWorks?.step4Desc ?? 'Your entries go into the monthly prize drawing. More entries = better odds!';
+    const tipText = this.sdkConfig?.copy?.howItWorks?.tipText ?? 'Pro tip: A 5-day streak earns a weekly bonus of extra entries!';
+    const gotItText = this.sdkConfig?.copy?.howItWorks?.gotItButton ?? 'Got It!';
+
+    const steps = [
+      { icon: '📅', title: step1Title, desc: step1Desc },
+      { icon: '🔥', title: step2Title, desc: step2Desc },
+      { icon: '▶️', title: step3Title, desc: step3Desc },
+      { icon: '🎁', title: step4Title, desc: step4Desc },
+    ];
+
     // Scrollable content
     const scroll = document.createElement('div');
     scroll.className = 'winr-how-scroll';
@@ -43,8 +58,8 @@ export class HowItWorksScreen {
     hero.className = 'winr-how-hero';
     hero.innerHTML = `
       <div class="winr-how-hero-emoji">🎰</div>
-      <h2 class="winr-how-hero-title">How It Works</h2>
-      <p class="winr-how-hero-desc">Earn entries every day for a chance to win big.</p>
+      <h2 class="winr-how-hero-title">${title}</h2>
+      <p class="winr-how-hero-desc">${subtitle}</p>
     `;
     scroll.appendChild(hero);
 
@@ -52,7 +67,7 @@ export class HowItWorksScreen {
     const stepsContainer = document.createElement('div');
     stepsContainer.className = 'winr-how-steps';
 
-    this.steps.forEach((step, index) => {
+    steps.forEach((step, index) => {
       const row = document.createElement('div');
       row.className = 'winr-how-step';
       row.innerHTML = `
@@ -75,7 +90,7 @@ export class HowItWorksScreen {
     tip.className = 'winr-how-tip';
     tip.innerHTML = `
       <span class="winr-how-tip-icon">💡</span>
-      <p class="winr-how-tip-text">Pro tip: A 5-day streak earns a weekly bonus of extra entries!</p>
+      <p class="winr-how-tip-text">${tipText}</p>
     `;
     scroll.appendChild(tip);
 
@@ -87,7 +102,7 @@ export class HowItWorksScreen {
 
     const btn = document.createElement('button');
     btn.className = 'winr-how-gotit-btn';
-    btn.textContent = 'Got It!';
+    btn.textContent = gotItText;
     btn.addEventListener('click', () => {
       analyticsAdapter.track('winr_how_it_works_closed');
       this.callbacks.onClose?.();

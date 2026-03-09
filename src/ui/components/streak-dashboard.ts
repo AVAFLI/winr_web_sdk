@@ -85,16 +85,18 @@ export class StreakDashboard {
       : 'WIN PRIZES!';
     const prizeSub = document.createElement('p');
     prizeSub.className = 'winr-streak-prize-subtitle';
-    prizeSub.textContent = this.sdkConfig?.copy?.streakMessage
-      || 'Keep your daily streak alive to unlock more entries.';
+    prizeSub.textContent = this.sdkConfig?.copy?.streakDashboard?.streakMessage
+      ?? this.sdkConfig?.copy?.streakMessage
+      ?? 'Keep your daily streak alive to unlock more entries.';
     banner.appendChild(prizeTitle);
     banner.appendChild(prizeSub);
     scroll.appendChild(banner);
 
     // Section label
+    const upcomingLabel = this.sdkConfig?.copy?.streakDashboard?.upcomingLabel ?? 'Upcoming rewards';
     const label = document.createElement('div');
     label.className = 'winr-streak-section-label';
-    label.textContent = 'Upcoming rewards';
+    label.textContent = upcomingLabel;
     scroll.appendChild(label);
 
     // Carousel
@@ -129,9 +131,10 @@ export class StreakDashboard {
       const bonusSection = document.createElement('div');
       bonusSection.className = 'winr-bonus-progress-section';
 
+      const bonusProgressLabel = this.sdkConfig?.copy?.streakDashboard?.bonusProgressLabel ?? 'Bonus Progress';
       const bonusLabel = document.createElement('div');
       bonusLabel.className = 'winr-bonus-progress-label';
-      bonusLabel.textContent = 'Bonus Progress';
+      bonusLabel.textContent = bonusProgressLabel;
       bonusSection.appendChild(bonusLabel);
 
       const pillRow = document.createElement('div');
@@ -139,8 +142,10 @@ export class StreakDashboard {
 
       // Weekly
       const sc = config.streakConfig;
+      const weekLabel = this.sdkConfig?.copy?.streakDashboard?.weekLabel ?? 'Week';
+      const monthLabel = this.sdkConfig?.copy?.streakDashboard?.monthLabel ?? 'Month';
       pillRow.appendChild(this.createBonusPill(
-        'Week',
+        weekLabel,
         this.streakState?.weeklyCurrent ?? 0,
         sc.weeklyBonusThreshold ?? 5,
         sc.weeklyBonusEntries ?? 0
@@ -148,7 +153,7 @@ export class StreakDashboard {
 
       // Monthly
       pillRow.appendChild(this.createBonusPill(
-        'Month',
+        monthLabel,
         this.streakState?.monthlyCurrent ?? 0,
         sc.monthlyBonusThreshold ?? 20,
         sc.monthlyBonusEntries ?? 0
@@ -165,28 +170,40 @@ export class StreakDashboard {
     footer.className = 'winr-streak-footer';
 
     if (this.claimedToday) {
+      const claimedTitle = this.sdkConfig?.copy?.alreadyClaimed?.title ?? "Today's entries claimed!";
+      const claimedSubtitle = this.sdkConfig?.copy?.alreadyClaimed?.subtitle ?? "Come back tomorrow to continue your streak.";
+      const doneButtonText = this.sdkConfig?.copy?.alreadyClaimed?.doneButton ?? "Done";
+
       footer.innerHTML = `
         <div class="winr-claimed-icon">✅</div>
-        <div class="winr-streak-footer-title">Today's entries claimed!</div>
-        <div class="winr-streak-footer-desc">Come back tomorrow to continue your streak.</div>
+        <div class="winr-streak-footer-title">${claimedTitle}</div>
+        <div class="winr-streak-footer-desc">${claimedSubtitle}</div>
       `;
       const doneBtn = document.createElement('button');
       doneBtn.className = 'winr-done-button';
-      doneBtn.textContent = 'Done';
+      doneBtn.textContent = doneButtonText;
       doneBtn.addEventListener('click', () => this.onClose?.());
       footer.appendChild(doneBtn);
     } else {
+      const dayRewardLabel = (this.sdkConfig?.copy?.streakDashboard?.dayRewardLabel ?? "Day {currentDay} reward")
+        .replace("{currentDay}", String(currentDay));
+      const claimDescription = (this.sdkConfig?.copy?.streakDashboard?.claimDescription ?? "Claim {entriesToday} entries for today's visit to keep your streak alive.")
+        .replace("{entriesToday}", String(entriesToday));
+      const claimButtonText = this.sdkConfig?.copy?.streakDashboard?.claimButton 
+        ?? this.sdkConfig?.copy?.dailyClaimButton 
+        ?? `Claim ${entriesToday} Entries`;
+
       const ftTitle = document.createElement('div');
       ftTitle.className = 'winr-streak-footer-title';
-      ftTitle.textContent = `Day ${currentDay} reward`;
+      ftTitle.textContent = dayRewardLabel;
 
       const ftDesc = document.createElement('div');
       ftDesc.className = 'winr-streak-footer-desc';
-      ftDesc.textContent = `Claim ${entriesToday} entries for today's visit to keep your streak alive.`;
+      ftDesc.textContent = claimDescription;
 
       const claimBtn = document.createElement('button');
       claimBtn.className = 'winr-claim-button';
-      claimBtn.textContent = this.sdkConfig?.copy?.dailyClaimButton || `Claim ${entriesToday} Entries`;
+      claimBtn.textContent = claimButtonText;
       claimBtn.addEventListener('click', () => this.onClaim?.());
 
       footer.appendChild(ftTitle);
@@ -209,6 +226,9 @@ export class StreakDashboard {
     const pct = Math.min(100, (current / target) * 100);
     const earned = current >= target;
 
+    const bonusEarnedText = this.sdkConfig?.copy?.streakDashboard?.bonusEarnedText ?? '✓ Bonus earned!';
+    const entriesLabel = this.sdkConfig?.copy?.streakDashboard?.entriesLabel ?? 'entries';
+
     pill.innerHTML = `
       <div class="winr-bonus-pill-header">
         <span class="winr-bonus-pill-label">${label}</span>
@@ -218,7 +238,7 @@ export class StreakDashboard {
         <div class="winr-bonus-pill-fill" style="width: ${pct}%"></div>
       </div>
       <div class="winr-bonus-pill-footer ${earned ? 'earned' : 'pending'}">
-        ${earned ? '✓ Bonus earned!' : `+${bonus} entries`}
+        ${earned ? bonusEarnedText : `+${bonus} ${entriesLabel}`}
       </div>
     `;
     return pill;

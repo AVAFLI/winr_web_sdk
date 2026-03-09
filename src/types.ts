@@ -201,19 +201,89 @@ export interface RegisterDeviceResponse {
   sdkConfig?: SDKConfig | null;
 }
 
+export interface SDKCopy {
+  // Nested per-screen
+  emailCapture?: {
+    title?: string;
+    subtitle?: string;
+    emailLabel?: string;
+    emailPlaceholder?: string;
+    ageGateText?: string;
+    submitButton?: string;
+    rulesPrefix?: string;
+    rulesLinkText?: string;
+    emailConsentText?: string;
+  };
+  streakDashboard?: {
+    streakMessage?: string;
+    upcomingLabel?: string;
+    claimButton?: string;
+    dayRewardLabel?: string;
+    claimDescription?: string;
+    entriesLabel?: string;
+    bonusProgressLabel?: string;
+    weekLabel?: string;
+    monthLabel?: string;
+    bonusEarnedText?: string;
+  };
+  alreadyClaimed?: {
+    title?: string;
+    subtitle?: string;
+    doneButton?: string;
+  };
+  bonusEntries?: {
+    title?: string;
+    subtitle?: string;
+    watchButton?: string;
+    skipText?: string;
+  };
+  milestone?: {
+    title?: string;
+    subtitle?: string;
+    continueButton?: string;
+  };
+  completed?: {
+    title?: string;
+    subtitle?: string;
+    closeButton?: string;
+  };
+  error?: {
+    title?: string;
+    subtitle?: string;
+    closeButton?: string;
+  };
+  howItWorks?: {
+    title?: string;
+    subtitle?: string;
+    step1Title?: string;
+    step1Desc?: string;
+    step2Title?: string;
+    step2Desc?: string;
+    step3Title?: string;
+    step3Desc?: string;
+    step4Title?: string;
+    step4Desc?: string;
+    tipText?: string;
+    gotItButton?: string;
+  };
+  loading?: {
+    text?: string;
+  };
+  // Flat backward compat
+  welcomeTitle?: string;
+  welcomeSubtitle?: string;
+  dailyClaimButton?: string;
+  streakMessage?: string;
+  emailConsentText?: string;
+  ageGateText?: string;
+  rulesLinkText?: string;
+}
+
 export interface SDKConfig {
   /** Branding overrides */
   branding?: WINRBranding;
   /** Copy/text overrides */
-  copy?: {
-    welcomeTitle?: string;
-    welcomeSubtitle?: string;
-    dailyClaimButton?: string;
-    streakMessage?: string;
-    emailConsentText?: string;
-    ageGateText?: string;
-    rulesLinkText?: string;
-  };
+  copy?: SDKCopy;
   /** Rules URL override */
   rulesUrl?: string;
   /** Age gate enabled */

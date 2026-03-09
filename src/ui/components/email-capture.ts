@@ -48,13 +48,19 @@ export class EmailCaptureScreen {
     if (!this.element) return;
 
     const logoUrl = this.sdkConfig?.branding?.logoUrl;
-    const welcomeTitle = this.sdkConfig?.copy?.welcomeTitle
-      || (this.campaign ? `WIN ${this.formatPrize(this.campaign.prizeValue)}!` : 'WIN PRIZES!');
-    const welcomeSubtitle = this.sdkConfig?.copy?.welcomeSubtitle
-      || 'Just submit this entry form for your FREE chance to win.';
-    const ageText = this.sdkConfig?.copy?.ageGateText || 'I confirm I am 18 years of age or older';
+    const welcomeTitle = this.sdkConfig?.copy?.emailCapture?.title 
+      ?? this.sdkConfig?.copy?.welcomeTitle
+      ?? (this.campaign ? `WIN ${this.formatPrize(this.campaign.prizeValue)}!` : 'WIN PRIZES!');
+    const welcomeSubtitle = this.sdkConfig?.copy?.emailCapture?.subtitle 
+      ?? this.sdkConfig?.copy?.welcomeSubtitle
+      ?? 'Just submit this entry form for your FREE chance to win.';
+    const ageText = this.sdkConfig?.copy?.emailCapture?.ageGateText 
+      ?? this.sdkConfig?.copy?.ageGateText 
+      ?? 'I confirm I am 18 years of age or older';
     const effectiveRulesUrl = this.rulesUrl || this.sdkConfig?.rulesUrl || this.campaign?.rulesUrl;
-    const rulesLinkText = this.sdkConfig?.copy?.rulesLinkText || 'Official Rules';
+    const rulesLinkText = this.sdkConfig?.copy?.emailCapture?.rulesLinkText 
+      ?? this.sdkConfig?.copy?.rulesLinkText 
+      ?? 'Official Rules';
 
     // Logo
     if (logoUrl) {
@@ -82,9 +88,12 @@ export class EmailCaptureScreen {
     const fieldGroup = document.createElement('div');
     fieldGroup.className = 'winr-email-field-group';
 
+    const emailLabel = this.sdkConfig?.copy?.emailCapture?.emailLabel ?? 'Email';
+    const emailPlaceholder = this.sdkConfig?.copy?.emailCapture?.emailPlaceholder ?? 'Ex. johndoe@gmail.com';
+    
     const label = document.createElement('label');
     label.className = 'winr-email-field-label';
-    label.textContent = 'Email';
+    label.textContent = emailLabel;
     fieldGroup.appendChild(label);
 
     const inputWrapper = document.createElement('div');
@@ -98,7 +107,7 @@ export class EmailCaptureScreen {
     const input = document.createElement('input');
     input.className = 'winr-email-input';
     input.type = 'email';
-    input.placeholder = 'Ex. johndoe@gmail.com';
+    input.placeholder = emailPlaceholder;
     input.autocomplete = 'email';
     input.setAttribute('autocapitalize', 'none');
     input.setAttribute('autocorrect', 'off');
@@ -131,15 +140,17 @@ export class EmailCaptureScreen {
     this.element.appendChild(ageGate);
 
     // CTA button
+    const submitButtonText = this.sdkConfig?.copy?.emailCapture?.submitButton ?? 'ENTER NOW';
     const btn = document.createElement('button');
     btn.className = 'winr-enter-button inactive';
-    btn.textContent = 'ENTER NOW';
+    btn.textContent = submitButtonText;
     this.element.appendChild(btn);
 
     // Legal links
+    const rulesPrefix = this.sdkConfig?.copy?.emailCapture?.rulesPrefix ?? 'By entering, you agree to the';
     const legal = document.createElement('div');
     legal.className = 'winr-legal-links';
-    const legalParts: string[] = ['<span>By entering, you agree to the</span>'];
+    const legalParts: string[] = [`<span>${rulesPrefix}</span>`];
     if (effectiveRulesUrl) {
       legalParts.push(`<a href="${effectiveRulesUrl}" target="_blank" rel="noopener">${rulesLinkText}</a>`);
     } else {

@@ -1,4 +1,4 @@
-import { WINRError, WINRErrorCode, RewardedVideoProvider } from '../../types';
+import { WINRError, WINRErrorCode, RewardedVideoProvider, SDKConfig } from '../../types';
 import { logger } from '../../services/logger';
 import { analyticsAdapter } from '../../services/analytics';
 
@@ -17,7 +17,8 @@ export class BonusEntriesScreen {
 
   constructor(
     private rewardedVideoProvider: RewardedVideoProvider | null,
-    private maxBonusEntries: number = 50
+    private maxBonusEntries: number = 50,
+    private sdkConfig: SDKConfig | null = null
   ) {}
 
   public setCallbacks(callbacks: {
@@ -44,25 +45,32 @@ export class BonusEntriesScreen {
     const entries = this.maxBonusEntries;
 
     // Title
+    const titleText = this.sdkConfig?.copy?.bonusEntries?.title ?? 'BONUS ENTRIES';
     const title = document.createElement('h2');
     title.className = 'winr-bonus-title';
-    title.textContent = 'BONUS ENTRIES';
+    title.textContent = titleText;
 
     // Description
+    const subtitleTemplate = this.sdkConfig?.copy?.bonusEntries?.subtitle ?? 'Watch a short video to double today\'s {entries} entries.';
+    const subtitleText = subtitleTemplate.replace('{entries}', String(entries));
     const desc = document.createElement('p');
     desc.className = 'winr-bonus-desc';
-    desc.textContent = `Watch a short video to double today's ${entries} entries.`;
+    desc.textContent = subtitleText;
 
     // Watch & Claim button
+    const watchButtonTemplate = this.sdkConfig?.copy?.bonusEntries?.watchButton ?? 'WATCH & CLAIM {totalEntries} ENTRIES';
+    const watchButtonText = watchButtonTemplate.replace('{totalEntries}', String(entries * 2));
     const claimBtn = document.createElement('button');
     claimBtn.className = 'winr-bonus-claim-btn';
-    claimBtn.textContent = `WATCH & CLAIM ${entries * 2} ENTRIES`;
+    claimBtn.textContent = watchButtonText;
     claimBtn.addEventListener('click', () => this.handleWatch());
 
     // Skip button
+    const skipTemplate = this.sdkConfig?.copy?.bonusEntries?.skipText ?? 'No thanks, continue with {entries} entries';
+    const skipText = skipTemplate.replace('{entries}', String(entries));
     const skipBtn = document.createElement('button');
     skipBtn.className = 'winr-bonus-skip';
-    skipBtn.textContent = `No thanks, continue with ${entries} entries`;
+    skipBtn.textContent = skipText;
     skipBtn.addEventListener('click', () => {
       analyticsAdapter.track('winr_bonus_entries_skipped');
       this.callbacks.onClose?.();

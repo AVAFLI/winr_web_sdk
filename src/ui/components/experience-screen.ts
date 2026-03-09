@@ -155,11 +155,12 @@ export class ExperienceScreen {
   // ── Renderers ──
 
   private renderLoading(): void {
+    const loadingText = this.sdkConfig?.copy?.loading?.text ?? "Loading today's reward…";
     const el = document.createElement('div');
     el.className = 'winr-loading-state';
     el.innerHTML = `
       <div class="winr-loading-spinner"></div>
-      <span class="winr-loading-text">Loading today's reward…</span>
+      <span class="winr-loading-text">${loadingText}</span>
     `;
     this.contentEl!.appendChild(el);
   }
@@ -198,7 +199,7 @@ export class ExperienceScreen {
   }
 
   private renderBonus(baseEntries: number): void {
-    const bonus = new BonusEntriesScreen(null, baseEntries);
+    const bonus = new BonusEntriesScreen(null, baseEntries, this.sdkConfig);
     bonus.setCallbacks({
       onBonusEarned: (entries) => {
         const total = (this.streakState?.totalEntriesEarned || 0) + baseEntries + entries;
@@ -224,7 +225,7 @@ export class ExperienceScreen {
   }
 
   private renderHowItWorks(): void {
-    const hiw = new HowItWorksScreen();
+    const hiw = new HowItWorksScreen(this.sdkConfig);
     hiw.setCallbacks({
       onClose: () => this.hideHowItWorks(),
     });
@@ -232,28 +233,37 @@ export class ExperienceScreen {
   }
 
   private renderCompleted(totalEntries: number): void {
+    const title = this.sdkConfig?.copy?.completed?.title ?? "Entries Claimed!";
+    const subtitle = (this.sdkConfig?.copy?.completed?.subtitle ?? "+{totalEntries} entries added to this month's drawing.")
+      .replace("{totalEntries}", String(totalEntries));
+    const closeText = this.sdkConfig?.copy?.completed?.closeButton ?? "Close";
+
     const el = document.createElement('div');
     el.className = 'winr-card-state';
     el.innerHTML = `
-      <h2>Entries Claimed!</h2>
-      <p>+${totalEntries} entries added to this month's drawing.</p>
+      <h2>${title}</h2>
+      <p>${subtitle}</p>
     `;
     const btn = document.createElement('button');
-    btn.textContent = 'Close';
+    btn.textContent = closeText;
     btn.addEventListener('click', () => this.callbacks?.onClose?.());
     el.appendChild(btn);
     this.contentEl!.appendChild(el);
   }
 
   private renderError(message: string): void {
+    const title = this.sdkConfig?.copy?.error?.title ?? "Something went wrong.";
+    const subtitle = this.sdkConfig?.copy?.error?.subtitle ?? (message || 'Please try again later.');
+    const closeText = this.sdkConfig?.copy?.error?.closeButton ?? "Close";
+
     const el = document.createElement('div');
     el.className = 'winr-card-state';
     el.innerHTML = `
-      <h2>Something went wrong.</h2>
-      <p>${message || 'Please try again later.'}</p>
+      <h2>${title}</h2>
+      <p>${subtitle}</p>
     `;
     const btn = document.createElement('button');
-    btn.textContent = 'Close';
+    btn.textContent = closeText;
     btn.addEventListener('click', () => this.callbacks?.onClose?.());
     el.appendChild(btn);
     this.contentEl!.appendChild(el);
