@@ -13,6 +13,7 @@ import {
   DeleteUserDataResponse,
   Campaign,
   StreakState,
+  SDKConfig,
   WINR_CONSTANTS,
 } from './types';
 import { NetworkClient } from './network/client';
@@ -38,6 +39,7 @@ export class WINR {
   private storage: LocalStorageProvider;
   private deviceFingerprint: string | null = null;
   private currentModal: WINRModal | null = null;
+  private serverSDKConfig: SDKConfig | null = null;
 
   private constructor(config: WINRConfiguration) {
     this.config = config;
@@ -413,8 +415,11 @@ export class WINR {
       this.storage.setItem(WINR_CONSTANTS.STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
       this.storage.setItem(WINR_CONSTANTS.STORAGE_KEYS.UUID, response.uuid);
 
-      // Store campaign data
+      // Store campaign data and server SDK config
       this.currentCampaign = response.campaign;
+      if (response.sdkConfig) {
+        this.serverSDKConfig = response.sdkConfig;
+      }
 
       // Initialize streak state if needed
       if (!response.isReturningUser) {
@@ -478,6 +483,9 @@ export class WINR {
     try {
       const response = await this.client.get<GetActiveCampaignResponse>('/getActiveCampaign');
       this.currentCampaign = response.campaign;
+      if (response.sdkConfig) {
+        this.serverSDKConfig = response.sdkConfig;
+      }
       
       logger.debug('Campaign data refreshed');
       
@@ -507,15 +515,23 @@ export class WINR {
     this.storage.setItem(WINR_CONSTANTS.STORAGE_KEYS.STREAK_STATE, JSON.stringify(state));
   }
 
-  private getCurrentSDKConfig() {
-    // Merge default config with any server-provided overrides
+  private getCurrentSDKConfig(): SDKConfig {
+    // Merge client config with server-provided overrides (server wins)
+    const serverBranding = this.serverSDKConfig?.branding;
+    const clientBranding = this.config.branding;
+
     return {
       branding: {
-        ...this.config.branding,
+        primaryColor: serverBranding?.primaryColor || clientBranding?.primaryColor,
+        secondaryColor: serverBranding?.secondaryColor || clientBranding?.secondaryColor,
+        backgroundColor: serverBranding?.backgroundColor || clientBranding?.backgroundColor,
+        logoUrl: serverBranding?.logoUrl || clientBranding?.logoUrl,
+        fontFamily: serverBranding?.fontFamily || clientBranding?.fontFamily,
       },
-      copy: {},
-      ageGateEnabled: this.config.options?.enableAgeGate ?? true,
-      ageGateMinAge: this.config.options?.ageGateMinAge ?? 13,
+      copy: this.serverSDKConfig?.copy || {},
+      rulesUrl: this.serverSDKConfig?.rulesUrl,
+      ageGateEnabled: this.serverSDKConfig?.ageGateEnabled ?? this.config.options?.enableAgeGate ?? true,
+      ageGateMinAge: this.serverSDKConfig?.ageGateMinAge ?? this.config.options?.ageGateMinAge ?? 13,
     };
   }
 }

@@ -59,7 +59,23 @@ export const defaultTheme: Theme = {
  * iOS-matching color references for use across components
  * Maps to WINRBranding properties from iOS SDK
  */
-export const iosColors = {
+export interface IOSColors {
+  backgroundColor: string;
+  cardBackgroundColor: string;
+  cardBorderColor: string;
+  primaryColor: string;
+  secondaryTextColor: string;
+  mutedTextColor: string;
+  primaryButtonColor: string;
+  primaryButtonTextColor: string;
+  accentGlowColor: string;
+  inputFieldBackgroundColor: string;
+  inputFieldBorderColor: string;
+  inputFieldPlaceholderColor: string;
+  cornerRadius: number;
+}
+
+const defaultIOSColors: IOSColors = {
   backgroundColor: '#0D0D0D',
   cardBackgroundColor: '#1A1A2E',
   cardBorderColor: 'rgba(255,255,255,0.12)',
@@ -74,6 +90,25 @@ export const iosColors = {
   inputFieldPlaceholderColor: '#6B6B80',
   cornerRadius: 16,
 };
+
+/**
+ * @deprecated Use createIOSColors(theme) for branding-aware colors
+ */
+export const iosColors: IOSColors = defaultIOSColors;
+
+/**
+ * Create iOS color set derived from the current theme / branding
+ */
+export function createIOSColors(theme: Theme): IOSColors {
+  return {
+    ...defaultIOSColors,
+    backgroundColor: theme.colors.background,
+    primaryColor: theme.colors.primary,
+    secondaryTextColor: theme.colors.secondary,
+    cardBackgroundColor: theme.colors.surface,
+    inputFieldBackgroundColor: theme.colors.surface,
+  };
+}
 
 /**
  * Create theme from branding configuration
@@ -95,6 +130,8 @@ export function createTheme(branding?: WINRBranding): Theme {
  * Generate CSS variables from theme
  */
 export function generateCSSVariables(theme: Theme): string {
+  const derived = createIOSColors(theme);
+
   const cssVars = [
     `--winr-color-primary: ${theme.colors.primary};`,
     `--winr-color-secondary: ${theme.colors.secondary};`,
@@ -131,16 +168,16 @@ export function generateCSSVariables(theme: Theme): string {
     `--winr-shadow-md: ${theme.shadows.md};`,
     `--winr-shadow-lg: ${theme.shadows.lg};`,
     `--winr-shadow-xl: ${theme.shadows.xl};`,
-    // iOS-specific tokens
-    `--winr-btn-color: ${iosColors.primaryButtonColor};`,
-    `--winr-btn-text: ${iosColors.primaryButtonTextColor};`,
-    `--winr-glow: ${iosColors.accentGlowColor};`,
-    `--winr-card-bg: ${iosColors.cardBackgroundColor};`,
-    `--winr-card-border: ${iosColors.cardBorderColor};`,
-    `--winr-muted: ${iosColors.mutedTextColor};`,
-    `--winr-input-bg: ${iosColors.inputFieldBackgroundColor};`,
-    `--winr-input-border: ${iosColors.inputFieldBorderColor};`,
-    `--winr-input-placeholder: ${iosColors.inputFieldPlaceholderColor};`,
+    // iOS-specific tokens (derived from theme)
+    `--winr-btn-color: ${derived.primaryButtonColor};`,
+    `--winr-btn-text: ${derived.primaryButtonTextColor};`,
+    `--winr-glow: ${derived.accentGlowColor};`,
+    `--winr-card-bg: ${derived.cardBackgroundColor};`,
+    `--winr-card-border: ${derived.cardBorderColor};`,
+    `--winr-muted: ${derived.mutedTextColor};`,
+    `--winr-input-bg: ${derived.inputFieldBackgroundColor};`,
+    `--winr-input-border: ${derived.inputFieldBorderColor};`,
+    `--winr-input-placeholder: ${derived.inputFieldPlaceholderColor};`,
   ];
 
   return cssVars.join('\n  ');

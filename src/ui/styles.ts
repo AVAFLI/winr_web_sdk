@@ -56,7 +56,7 @@ export function generateModalStyles(theme: Theme): string {
 .winr-experience-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, var(--winr-color-background) 0%, rgba(13,13,13,0.94) 100%);
+  background: linear-gradient(180deg, var(--winr-color-background) 0%, color-mix(in srgb, var(--winr-color-background) 94%, transparent) 100%);
   z-index: 0;
 }
 
@@ -67,7 +67,7 @@ export function generateModalStyles(theme: Theme): string {
   transform: translateX(-50%);
   width: 840px;
   height: 840px;
-  background: radial-gradient(circle, rgba(255,215,0,0.35) 0%, transparent 60%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--winr-glow) 35%, transparent) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -87,7 +87,7 @@ export function generateModalStyles(theme: Theme): string {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(26,26,46,0.9);
+  background: color-mix(in srgb, var(--winr-card-bg) 90%, transparent);
   border: 1px solid var(--winr-card-border);
   display: flex;
   align-items: center;
@@ -104,7 +104,7 @@ export function generateModalStyles(theme: Theme): string {
 }
 
 .winr-header-icon:hover {
-  background: rgba(26,26,46,1);
+  background: var(--winr-card-bg);
 }
 
 .winr-header-spacer {
@@ -278,7 +278,7 @@ export function generateModalStyles(theme: Theme): string {
 }
 
 .winr-enter-button.active {
-  box-shadow: 0 12px 16px rgba(255,215,0,0.5);
+  box-shadow: 0 12px 16px color-mix(in srgb, var(--winr-glow) 50%, transparent);
 }
 
 .winr-enter-button.inactive {
@@ -336,7 +336,7 @@ export function generateModalStyles(theme: Theme): string {
   max-width: 75%;
   max-height: 22vh;
   object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(255,215,0,0.5));
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--winr-glow) 50%, transparent));
 }
 
 .winr-streak-prize-banner {
@@ -347,8 +347,8 @@ export function generateModalStyles(theme: Theme): string {
 .winr-streak-prize-title {
   font-size: 22px;
   font-weight: 900;
-  color: #FFFFFF;
-  text-shadow: 0 4px 8px rgba(255,215,0,0.8);
+  color: var(--winr-color-text);
+  text-shadow: 0 4px 8px color-mix(in srgb, var(--winr-glow) 80%, transparent);
   margin: 0;
   font-family: var(--winr-font-family);
 }
@@ -408,9 +408,9 @@ export function generateModalStyles(theme: Theme): string {
 .winr-bonus-pill {
   flex: 1;
   padding: 10px;
-  background: rgba(26,26,46,0.5);
+  background: color-mix(in srgb, var(--winr-card-bg) 50%, transparent);
   border-radius: 16px;
-  border: 1px solid rgba(255,215,0,0.25);
+  border: 1px solid color-mix(in srgb, var(--winr-glow) 25%, transparent);
 }
 
 .winr-bonus-pill-header {
@@ -468,7 +468,7 @@ export function generateModalStyles(theme: Theme): string {
   padding: 0 14px 16px 14px;
   text-align: center;
   z-index: 10;
-  background: linear-gradient(180deg, transparent 0%, rgba(13,13,13,0.96) 40%);
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--winr-color-background) 96%, transparent) 40%);
 }
 
 .winr-streak-footer-title {
@@ -497,7 +497,7 @@ export function generateModalStyles(theme: Theme): string {
   background: var(--winr-btn-color);
   cursor: pointer;
   font-family: var(--winr-font-family);
-  box-shadow: 0 8px 14px rgba(255,215,0,0.6);
+  box-shadow: 0 8px 14px color-mix(in srgb, var(--winr-glow) 60%, transparent);
   transition: transform 0.15s;
 }
 
@@ -513,12 +513,12 @@ export function generateModalStyles(theme: Theme): string {
   width: calc(100% - 8px);
   margin: 2px 4px 0 4px;
   padding: 14px 0;
-  border: 1px solid rgba(255,215,0,0.4);
+  border: 1px solid color-mix(in srgb, var(--winr-glow) 40%, transparent);
   border-radius: 16px;
   font-size: 17px;
   font-weight: 600;
   color: var(--winr-color-secondary);
-  background: rgba(26,26,46,0.8);
+  background: color-mix(in srgb, var(--winr-card-bg) 80%, transparent);
   cursor: pointer;
   font-family: var(--winr-font-family);
 }
@@ -545,19 +545,19 @@ export function generateModalStyles(theme: Theme): string {
 
 /* Tile states */
 .winr-tile.is-today {
-  background: linear-gradient(135deg, var(--winr-btn-color), rgba(26,26,46,0.9));
+  background: linear-gradient(135deg, var(--winr-btn-color), color-mix(in srgb, var(--winr-card-bg) 90%, transparent));
   border: 2px solid var(--winr-glow);
-  box-shadow: 0 4px 12px rgba(255,215,0,0.7);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--winr-glow) 70%, transparent);
   transform: scale(1.05);
 }
 
 .winr-tile.is-claimed {
-  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(26,26,46,0.9));
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), color-mix(in srgb, var(--winr-card-bg) 90%, transparent));
   border: 1px solid rgba(255,255,255,0.6);
 }
 
 .winr-tile.is-locked {
-  background: linear-gradient(180deg, rgba(26,26,46,0.45), rgba(26,26,46,0.3));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--winr-card-bg) 45%, transparent), color-mix(in srgb, var(--winr-card-bg) 30%, transparent));
   border: 1px solid rgba(255,255,255,0.15);
 }
 
@@ -571,7 +571,7 @@ export function generateModalStyles(theme: Theme): string {
 }
 
 .winr-tile.is-today .winr-tile-pill {
-  background: rgba(26,26,46,0.95);
+  background: color-mix(in srgb, var(--winr-card-bg) 95%, transparent);
   color: var(--winr-btn-text);
 }
 
@@ -581,7 +581,7 @@ export function generateModalStyles(theme: Theme): string {
 }
 
 .winr-tile.is-locked .winr-tile-pill {
-  background: rgba(26,26,46,0.85);
+  background: color-mix(in srgb, var(--winr-card-bg) 85%, transparent);
   color: var(--winr-color-secondary);
 }
 
@@ -607,7 +607,7 @@ export function generateModalStyles(theme: Theme): string {
   font-variant-numeric: tabular-nums;
 }
 
-.winr-tile.is-today .winr-tile-entries  { color: #FFFFFF; }
+.winr-tile.is-today .winr-tile-entries  { color: var(--winr-color-text); }
 .winr-tile.is-claimed .winr-tile-entries { color: var(--winr-color-text); }
 .winr-tile.is-locked .winr-tile-entries  { color: rgba(160,160,176,0.85); }
 
@@ -736,7 +736,7 @@ export function generateModalStyles(theme: Theme): string {
   align-items: flex-start;
   gap: 14px;
   padding: 14px;
-  background: rgba(26,26,46,0.5);
+  background: color-mix(in srgb, var(--winr-card-bg) 50%, transparent);
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.06);
 }
@@ -817,7 +817,7 @@ export function generateModalStyles(theme: Theme): string {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   padding: 0 24px 20px 24px;
-  background: linear-gradient(180deg, transparent 0%, rgba(13,13,13,0.96) 40%);
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--winr-color-background) 96%, transparent) 40%);
   z-index: 10;
 }
 
@@ -832,7 +832,7 @@ export function generateModalStyles(theme: Theme): string {
   background: var(--winr-btn-color);
   cursor: pointer;
   font-family: var(--winr-font-family);
-  box-shadow: 0 8px 14px rgba(255,215,0,0.5);
+  box-shadow: 0 8px 14px color-mix(in srgb, var(--winr-glow) 50%, transparent);
 }
 
 /* ═══════════════════════════════════════════
@@ -852,7 +852,7 @@ export function generateModalStyles(theme: Theme): string {
 .winr-loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(255,215,0,0.2);
+  border: 3px solid color-mix(in srgb, var(--winr-glow) 20%, transparent);
   border-top-color: var(--winr-glow);
   border-radius: 50%;
   animation: winr-spin 0.8s linear infinite;
