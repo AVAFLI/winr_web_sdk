@@ -48,7 +48,7 @@ export class WINR {
     
     // Initialize network client
     this.client = new NetworkClient({
-      baseURL: WINR_CONSTANTS.API_BASE_URL,
+      baseURL: WINR_CONSTANTS.getApiBaseUrl(config.options?.environment),
       apiKey: config.apiKey,
       tokenProvider: () => this.storage.getItem(WINR_CONSTANTS.STORAGE_KEYS.TOKEN),
       refreshHandler: () => this.refreshToken(),
@@ -133,6 +133,9 @@ export class WINR {
     if (!WINR.ensureConfigured()) return;
     
     try {
+      // Refresh SDK config to ensure latest branding/settings
+      await WINR.instance!.refreshConfig();
+      
       // Refresh campaign data
       await WINR.instance!.refreshCampaignData();
       
@@ -180,6 +183,9 @@ export class WINR {
     if (!WINR.ensureConfigured()) return;
     
     try {
+      // Refresh SDK config to ensure latest branding/settings
+      await WINR.instance!.refreshConfig();
+      
       // Refresh campaign data
       await WINR.instance!.refreshCampaignData();
       
@@ -230,6 +236,29 @@ export class WINR {
       
       analyticsAdapter.track('winr_modal_dismissed');
       logger.debug('Modal dismissed');
+    }
+  }
+
+  /**
+   * Refresh SDK configuration from server
+   */
+  public static async refreshConfig(): Promise<void> {
+    if (!WINR.ensureConfigured()) return;
+    
+    try {
+      await WINR.instance!.refreshConfig();
+      logger.info('SDK config refreshed successfully');
+    } catch (error) {
+      const winrError = error instanceof WINRError 
+        ? error 
+        : new WINRError(
+            WINRErrorCode.NetworkError,
+            'Failed to refresh SDK config',
+            error instanceof Error ? error : undefined
+          );
+      
+      logger.error('Failed to refresh config:', winrError);
+      throw winrError;
     }
   }
 
@@ -476,6 +505,23 @@ export class WINR {
       this.storage.removeItem(WINR_CONSTANTS.STORAGE_KEYS.TOKEN);
       this.storage.removeItem(WINR_CONSTANTS.STORAGE_KEYS.REFRESH_TOKEN);
       throw error;
+    }
+  }
+
+  private async refreshConfig(): Promise<void> {
+    try {
+      // Fetch fresh SDK config from getActiveCampaign endpoint
+      // This ensures the latest branding, copy, and settings are loaded
+      const response = await this.client.get<GetActiveCampaignResponse>('/getActiveCampaign');
+      if (response.sdkConfig) {
+        this.serverSDKConfig = response.sdkConfig;
+      }
+      
+      logger.debug('SDK config refreshed');
+      
+    } catch (error) {
+      logger.warn('Failed to refresh SDK config:', error);
+      // Continue with cached config
     }
   }
 

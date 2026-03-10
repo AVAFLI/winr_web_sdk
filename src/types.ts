@@ -6,7 +6,7 @@
 
 export interface WINROptions {
   /** API environment */
-  environment?: 'production' | 'staging' | 'development';
+  environment?: 'production' | 'staging' | 'qa';
   /** Enable debug logging */
   debug?: boolean;
   /** Enable streak reminder push notifications */
@@ -506,7 +506,16 @@ export interface PresentationOptions {
 export const WINR_CONSTANTS = {
   SDK_VERSION: '1.0.0',
   PLATFORM_OS: 'Web',
-  API_BASE_URL: 'https://us-central1-winr-9c11f.cloudfunctions.net',
+  getApiBaseUrl: (environment: 'production' | 'staging' | 'qa' = 'production'): string => {
+    switch (environment) {
+      case 'production':
+        return 'https://us-central1-winr-9c11f.cloudfunctions.net';
+      case 'staging':
+        return 'https://us-central1-winr-staging.cloudfunctions.net';
+      case 'qa':
+        return 'https://us-central1-winr-qa.cloudfunctions.net';
+    }
+  },
   DEFAULT_STREAK_LADDER: [10, 30, 60, 130, 240, 300],
   STORAGE_KEYS: {
     TOKEN: 'winr_token',
