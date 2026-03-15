@@ -1,12 +1,12 @@
 import {
-  Campaign,
+  Giveaway,
   StreakState,
   SDKConfig,
   DailyEntryGrant,
   WINRError,
   WINRErrorCode,
 } from '../../types';
-import { CampaignModel } from '../../domain/campaign';
+import { GiveawayModel } from '../../domain/giveaway';
 import { logger } from '../../services/logger';
 import { StreakDashboard } from './streak-dashboard';
 import { BonusEntriesScreen } from './bonus-entries';
@@ -42,7 +42,7 @@ export class ExperienceScreen {
   private element: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
   private callbacks?: ExperienceCallbacks;
-  private campaignModel: CampaignModel | null = null;
+  private giveawayModel: GiveawayModel | null = null;
   private state: ExperienceState = { kind: 'loading' };
   private previousState: ExperienceState | null = null;
   private isProcessing = false;
@@ -54,13 +54,13 @@ export class ExperienceScreen {
   }) => void;
 
   constructor(
-    private campaign: Campaign | null,
+    private giveaway: Giveaway | null,
     private streakState: StreakState | null,
     private sdkConfig: SDKConfig | null,
     private claimedToday = false,
     private hasEmail = false
   ) {
-    this.campaignModel = campaign ? CampaignModel.fromJSON(campaign) : null;
+    this.giveawayModel = giveaway ? GiveawayModel.fromJSON(giveaway) : null;
   }
 
   public setCallbacks(callbacks: ExperienceCallbacks): void {
@@ -78,8 +78,8 @@ export class ExperienceScreen {
     this.element.appendChild(this.contentEl);
 
     // Start state machine
-    if (!this.campaignModel || !this.campaignModel.isActive()) {
-      this.transitionTo({ kind: 'error', message: 'No active campaign at the moment.' });
+    if (!this.giveawayModel || !this.giveawayModel.isActive()) {
+      this.transitionTo({ kind: 'error', message: 'No active giveaway at the moment.' });
     } else if (!this.hasEmail) {
       this.transitionTo({ kind: 'emailCapture' });
     } else if (!this.claimedToday) {
@@ -168,8 +168,8 @@ export class ExperienceScreen {
   private renderEmailCapture(): void {
     const screen = new EmailCaptureScreen(
       this.sdkConfig,
-      this.campaign,
-      this.sdkConfig?.rulesUrl || this.campaign?.rulesUrl,
+      this.giveaway,
+      this.sdkConfig?.rulesUrl || this.giveaway?.rulesUrl,
       undefined // prefillEmail
     );
     screen.setCallbacks({
@@ -183,10 +183,10 @@ export class ExperienceScreen {
   }
 
   private renderStreak(claimedToday: boolean): void {
-    if (!this.campaignModel) return;
+    if (!this.giveawayModel) return;
 
     const dashboard = new StreakDashboard(
-      this.campaignModel,
+      this.giveawayModel,
       this.streakState,
       this.sdkConfig
     );
@@ -287,7 +287,7 @@ export class ExperienceScreen {
       logger.debug('Claiming daily entries...');
 
       const currentDay = this.streakState?.currentDay || 1;
-      const entries = this.campaignModel?.getBaseEntries(currentDay) || 0;
+      const entries = this.giveawayModel?.getBaseEntries(currentDay) || 0;
 
       // TODO: Call backend API
       const result: DailyEntryGrant = {
@@ -298,8 +298,8 @@ export class ExperienceScreen {
 
       this.claimedToday = true;
 
-      // If campaign has ads, go to bonus; otherwise complete
-      if (this.campaignModel?.hasAdsEnabled() && this.campaignModel.doublingEnabled) {
+      // If giveaway has ads, go to bonus; otherwise complete
+      if (this.giveawayModel?.hasAdsEnabled() && this.giveawayModel.doublingEnabled) {
         this.transitionTo({ kind: 'bonus', baseEntries: entries });
       } else {
         this.transitionTo({ kind: 'completed', totalEntries: result.totalEntries });

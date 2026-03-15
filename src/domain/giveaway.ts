@@ -1,9 +1,9 @@
-import { Campaign, MilestoneConfig, StreakConfig } from '../types';
+import { Giveaway, MilestoneConfig, StreakConfig } from '../types';
 
 /**
- * Campaign model with utility methods
+ * Giveaway model with utility methods
  */
-export class CampaignModel implements Campaign {
+export class GiveawayModel implements Giveaway {
   public id: string;
   public title: string;
   public prizeDescription: string;
@@ -23,7 +23,7 @@ export class CampaignModel implements Campaign {
     placementName?: string;
   };
 
-  constructor(data: Campaign) {
+  constructor(data: Giveaway) {
     this.id = data.id;
     this.title = data.title;
     this.prizeDescription = data.prizeDescription;
@@ -40,7 +40,7 @@ export class CampaignModel implements Campaign {
   }
 
   /**
-   * Check if the campaign is currently active
+   * Check if the giveaway is currently active
    */
   public isActive(): boolean {
     const now = new Date();
@@ -50,7 +50,7 @@ export class CampaignModel implements Campaign {
   }
 
   /**
-   * Get the number of days remaining in the campaign
+   * Get the number of days remaining in the giveaway
    */
   public daysRemaining(): number {
     const now = new Date();
@@ -88,7 +88,7 @@ export class CampaignModel implements Campaign {
   }
 
   /**
-   * Get campaign duration in days
+   * Get giveaway duration in days
    */
   public getDuration(): number {
     const start = new Date(this.startDate);
@@ -105,7 +105,7 @@ export class CampaignModel implements Campaign {
   }
 
   /**
-   * Get time until campaign starts (if not yet started)
+   * Get time until giveaway starts (if not yet started)
    */
   public timeUntilStart(): number | null {
     const now = new Date();
@@ -115,7 +115,7 @@ export class CampaignModel implements Campaign {
   }
 
   /**
-   * Get time until campaign ends (if active)
+   * Get time until giveaway ends (if active)
    */
   public timeUntilEnd(): number | null {
     const now = new Date();
@@ -127,7 +127,7 @@ export class CampaignModel implements Campaign {
   /**
    * Serialize to plain object for storage
    */
-  public toJSON(): Campaign {
+  public toJSON(): Giveaway {
     return {
       id: this.id,
       title: this.title,
@@ -146,9 +146,9 @@ export class CampaignModel implements Campaign {
   }
 
   /**
-   * Create CampaignModel from plain object
+   * Create GiveawayModel from plain object
    */
-  public static fromJSON(data: Campaign): CampaignModel {
-    return new CampaignModel(data);
+  public static fromJSON(data: Giveaway): GiveawayModel {
+    return new GiveawayModel(data);
   }
 }

@@ -3,7 +3,7 @@ import {
   RegisterDeviceResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
-  GetActiveCampaignResponse,
+  GetActiveGiveawayResponse,
   ClaimDailyEntriesResponse,
   ClaimBonusEntriesResponse,
   SubmitEmailRequest,
@@ -39,10 +39,10 @@ export class WINRAPI {
   }
 
   /**
-   * Get active campaign configuration
+   * Get active giveaway configuration
    */
-  public async getActiveCampaign(): Promise<GetActiveCampaignResponse> {
-    return this.client.get<GetActiveCampaignResponse>('/getActiveCampaign');
+  public async getActiveGiveaway(): Promise<GetActiveGiveawayResponse> {
+    return this.client.get<GetActiveGiveawayResponse>('/getActiveGiveaway');
   }
 
   /**

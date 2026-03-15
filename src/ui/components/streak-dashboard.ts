@@ -1,5 +1,5 @@
-import { Campaign, StreakState, SDKConfig } from '../../types';
-import { CampaignModel } from '../../domain/campaign';
+import { Giveaway, StreakState, SDKConfig } from '../../types';
+import { GiveawayModel } from '../../domain/giveaway';
 import { StreakDayTile } from './streak-day-tile';
 
 /**
@@ -9,17 +9,17 @@ import { StreakDayTile } from './streak-day-tile';
 export class StreakDashboard {
   private element: HTMLElement | null = null;
   private dayTiles: StreakDayTile[] = [];
-  private campaignModel: CampaignModel = null!;
+  private giveawayModel: GiveawayModel = null!;
   private claimedToday = false;
   private onClaim?: () => void;
   private onClose?: () => void;
 
   constructor(
-    campaign: Campaign,
+    giveaway: Giveaway,
     private streakState: StreakState | null,
     private sdkConfig: SDKConfig | null
   ) {
-    this.campaignModel = CampaignModel.fromJSON(campaign);
+    this.giveawayModel = GiveawayModel.fromJSON(giveaway);
   }
 
   public setCallbacks(callbacks: {
@@ -49,9 +49,9 @@ export class StreakDashboard {
     if (!this.element) return;
     this.element.innerHTML = '';
 
-    const ladder = this.campaignModel.streakLadder;
+    const ladder = this.giveawayModel.streakLadder;
     const currentDay = this.streakState?.currentDay || 1;
-    const entriesToday = this.campaignModel.getBaseEntries(currentDay);
+    const entriesToday = this.giveawayModel.getBaseEntries(currentDay);
 
     // ── Scrollable content ──
     const scroll = document.createElement('div');
@@ -77,7 +77,7 @@ export class StreakDashboard {
     const prizeHeadline = this.sdkConfig?.copy?.streakDashboard?.prizeHeadline 
       ?? this.sdkConfig?.copy?.emailCapture?.prizeHeadline;
     prizeTitle.textContent = prizeHeadline 
-      ?? (this.campaignModel ? `WIN ${this.formatPrize(this.campaignModel.prizeValue)}!` : 'WIN PRIZES!');
+      ?? (this.giveawayModel ? `WIN ${this.formatPrize(this.giveawayModel.prizeValue)}!` : 'WIN PRIZES!');
     
     const prizeSub = document.createElement('p');
     prizeSub.className = 'winr-streak-prize-subtitle';
@@ -122,7 +122,7 @@ export class StreakDashboard {
     scroll.appendChild(carousel);
 
     // Bonus progress pills
-    const config = this.campaignModel;
+    const config = this.giveawayModel;
     if (config.streakConfig) {
       const bonusSection = document.createElement('div');
       bonusSection.className = 'winr-bonus-progress-section';
@@ -254,7 +254,7 @@ export class StreakDashboard {
 
   public getCurrentDayEntries(): number {
     const currentDay = this.streakState?.currentDay || 1;
-    return this.campaignModel.getBaseEntries(currentDay);
+    return this.giveawayModel.getBaseEntries(currentDay);
   }
 
   public isStreakBroken(): boolean {

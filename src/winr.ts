@@ -6,12 +6,12 @@ import {
   PresentationOptions,
   RegisterDeviceRequest,
   RegisterDeviceResponse,
-  GetActiveCampaignResponse,
+  GetActiveGiveawayResponse,
   ClaimDailyEntriesResponse,
   SubmitEmailRequest,
   SubmitUserProfileRequest,
   DeleteUserDataResponse,
-  Campaign,
+  Giveaway,
   StreakState,
   SDKConfig,
   WINR_CONSTANTS,
@@ -34,7 +34,7 @@ export class WINR {
   private client: NetworkClient;
   private config: WINRConfiguration;
   private currentUser: WINRUser | null = null;
-  private currentCampaign: Campaign | null = null;
+  private currentGiveaway: Giveaway | null = null;
   private streakEngine: StreakEngine;
   private storage: LocalStorageProvider;
   private deviceFingerprint: string | null = null;
@@ -136,15 +136,15 @@ export class WINR {
       // Refresh SDK config to ensure latest branding/settings
       await WINR.instance!.refreshConfig();
       
-      // Refresh campaign data
-      await WINR.instance!.refreshCampaignData();
+      // Refresh giveaway data
+      await WINR.instance!.refreshGiveawayData();
       
       // Get current streak state
       const streakState = WINR.instance!.getStreakState();
       
       // Create and present modal
       WINR.instance!.currentModal = new WINRModal(
-        WINR.instance!.currentCampaign,
+        WINR.instance!.currentGiveaway,
         streakState,
         WINR.instance!.getCurrentSDKConfig(),
         options
@@ -152,7 +152,7 @@ export class WINR {
       
       // Track modal presentation
       analyticsAdapter.track('winr_modal_presented', {
-        campaignId: WINR.instance!.currentCampaign?.id,
+        giveawayId: WINR.instance!.currentGiveaway?.id,
         streakDay: streakState?.currentDay || 0,
       });
       
@@ -186,15 +186,15 @@ export class WINR {
       // Refresh SDK config to ensure latest branding/settings
       await WINR.instance!.refreshConfig();
       
-      // Refresh campaign data
-      await WINR.instance!.refreshCampaignData();
+      // Refresh giveaway data
+      await WINR.instance!.refreshGiveawayData();
       
       // Get current streak state
       const streakState = WINR.instance!.getStreakState();
       
       // Create and present inline modal
       WINR.instance!.currentModal = new WINRModal(
-        WINR.instance!.currentCampaign,
+        WINR.instance!.currentGiveaway,
         streakState,
         WINR.instance!.getCurrentSDKConfig(),
         options
@@ -202,7 +202,7 @@ export class WINR {
       
       // Track inline presentation
       analyticsAdapter.track('winr_inline_presented', {
-        campaignId: WINR.instance!.currentCampaign?.id,
+        giveawayId: WINR.instance!.currentGiveaway?.id,
         streakDay: streakState?.currentDay || 0,
         containerId,
       });
@@ -277,7 +277,7 @@ export class WINR {
       
       // Reset internal state
       WINR.instance!.currentUser = null;
-      WINR.instance!.currentCampaign = null;
+      WINR.instance!.currentGiveaway = null;
       WINR.instance!.deviceFingerprint = null;
       
       analyticsAdapter.track('winr_user_data_deleted');
@@ -444,8 +444,8 @@ export class WINR {
       this.storage.setItem(WINR_CONSTANTS.STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
       this.storage.setItem(WINR_CONSTANTS.STORAGE_KEYS.UUID, response.uuid);
 
-      // Store campaign data and server SDK config
-      this.currentCampaign = response.campaign;
+      // Store giveaway data and server SDK config
+      this.currentGiveaway = response.giveaway;
       if (response.sdkConfig) {
         this.serverSDKConfig = response.sdkConfig;
       }
@@ -463,12 +463,12 @@ export class WINR {
 
       analyticsAdapter.track('winr_device_registered', {
         isReturningUser: response.isReturningUser,
-        campaignId: response.campaign?.id,
+        giveawayId: response.giveaway?.id,
       });
 
       logger.info('Device registered successfully', {
         isReturningUser: response.isReturningUser,
-        campaignId: response.campaign?.id,
+        giveawayId: response.giveaway?.id,
       });
       
     } catch (error) {
@@ -510,9 +510,9 @@ export class WINR {
 
   private async refreshConfig(): Promise<void> {
     try {
-      // Fetch fresh SDK config from getActiveCampaign endpoint
+      // Fetch fresh SDK config from getActiveGiveaway endpoint
       // This ensures the latest branding, copy, and settings are loaded
-      const response = await this.client.get<GetActiveCampaignResponse>('/getActiveCampaign');
+      const response = await this.client.get<GetActiveGiveawayResponse>('/getActiveGiveaway');
       if (response.sdkConfig) {
         this.serverSDKConfig = response.sdkConfig;
       }
@@ -525,18 +525,18 @@ export class WINR {
     }
   }
 
-  private async refreshCampaignData(): Promise<void> {
+  private async refreshGiveawayData(): Promise<void> {
     try {
-      const response = await this.client.get<GetActiveCampaignResponse>('/getActiveCampaign');
-      this.currentCampaign = response.campaign;
+      const response = await this.client.get<GetActiveGiveawayResponse>('/getActiveGiveaway');
+      this.currentGiveaway = response.giveaway;
       if (response.sdkConfig) {
         this.serverSDKConfig = response.sdkConfig;
       }
       
-      logger.debug('Campaign data refreshed');
+      logger.debug('Giveaway data refreshed');
       
     } catch (error) {
-      logger.warn('Failed to refresh campaign data:', error);
+      logger.warn('Failed to refresh giveaway data:', error);
       // Continue with cached data
     }
   }

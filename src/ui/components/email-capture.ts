@@ -1,4 +1,4 @@
-import { WINRError, WINRErrorCode, SDKConfig, Campaign } from '../../types';
+import { WINRError, WINRErrorCode, SDKConfig, Giveaway } from '../../types';
 import { logger } from '../../services/logger';
 import { analyticsAdapter } from '../../services/analytics';
 import { NetworkClient } from '../../network/client';
@@ -18,7 +18,7 @@ export class EmailCaptureScreen {
 
   constructor(
     private sdkConfig: SDKConfig | null,
-    private campaign: Campaign | null = null,
+    private giveaway: Giveaway | null = null,
     private rulesUrl?: string,
     private prefillEmail?: string
   ) {
@@ -52,14 +52,14 @@ export class EmailCaptureScreen {
     const welcomeTitle = this.sdkConfig?.copy?.emailCapture?.title 
       ?? this.sdkConfig?.copy?.welcomeTitle
       ?? prizeHeadline
-      ?? (this.campaign ? `WIN ${this.formatPrize(this.campaign.prizeValue)}!` : 'WIN PRIZES!');
+      ?? (this.giveaway ? `WIN ${this.formatPrize(this.giveaway.prizeValue)}!` : 'WIN PRIZES!');
     const welcomeSubtitle = this.sdkConfig?.copy?.emailCapture?.subtitle 
       ?? this.sdkConfig?.copy?.welcomeSubtitle
       ?? 'Just submit this entry form for your FREE chance to win.';
     const ageText = this.sdkConfig?.copy?.emailCapture?.ageGateText 
       ?? this.sdkConfig?.copy?.ageGateText 
       ?? 'I confirm I am 18 years of age or older';
-    const effectiveRulesUrl = this.rulesUrl || this.sdkConfig?.rulesUrl || this.campaign?.rulesUrl;
+    const effectiveRulesUrl = this.rulesUrl || this.sdkConfig?.rulesUrl || this.giveaway?.rulesUrl;
     const rulesLinkText = this.sdkConfig?.copy?.emailCapture?.rulesLinkText 
       ?? this.sdkConfig?.copy?.rulesLinkText 
       ?? 'Official Rules';
@@ -225,7 +225,7 @@ export class EmailCaptureScreen {
 
   private async submitEmailToBackend(email: string): Promise<void> {
     const client = new NetworkClient({
-      baseURL: WINR_CONSTANTS.API_BASE_URL,
+      baseURL: WINR_CONSTANTS.getApiBaseUrl(),
       apiKey: '',
       logger: logger,
     });

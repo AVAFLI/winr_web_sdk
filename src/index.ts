@@ -17,7 +17,7 @@ export type {
   StreakConfig,
   MilestoneConfig,
   MilestoneAward,
-  Campaign,
+  Giveaway,
   AdConfig,
   DailyEntryGrant,
   PresentationOptions,

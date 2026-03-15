@@ -253,7 +253,7 @@ export class NetworkClient {
       case 400:
         return WINRErrorCode.InvalidState;
       case 404:
-        return WINRErrorCode.CampaignNotActive;
+        return WINRErrorCode.GiveawayNotActive;
       default:
         return WINRErrorCode.NetworkError;
     }

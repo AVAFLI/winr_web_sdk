@@ -114,10 +114,10 @@ export interface MilestoneAward {
   badge?: string;
 }
 
-export interface Campaign {
-  /** Campaign ID */
+export interface Giveaway {
+  /** Giveaway ID */
   id: string;
-  /** Campaign title */
+  /** Giveaway title */
   title: string;
   /** Prize description */
   prizeDescription: string;
@@ -187,8 +187,8 @@ export interface RegisterDeviceResponse {
   refreshToken: string;
   /** User UUID */
   uuid: string;
-  /** Active campaign */
-  campaign: Campaign | null;
+  /** Active giveaway */
+  giveaway: Giveaway | null;
   /** Whether user is returning */
   isReturningUser?: boolean;
   /** Whether user claimed today */
@@ -321,9 +321,9 @@ export interface RefreshTokenResponse {
   refreshToken: string;
 }
 
-export interface GetActiveCampaignResponse {
-  /** Active campaign */
-  campaign: Campaign | null;
+export interface GetActiveGiveawayResponse {
+  /** Active giveaway */
+  giveaway: Giveaway | null;
   /** Whether user claimed today */
   claimedToday: boolean;
   /** Current streak day */
@@ -386,7 +386,7 @@ export enum WINRErrorCode {
   AuthenticationRequired = 'authentication_required',
   NetworkError = 'network_error',
   IneligibleToday = 'ineligible_today',
-  CampaignNotActive = 'campaign_not_active',
+  GiveawayNotActive = 'giveaway_not_active',
   InvalidEmail = 'invalid_email',
   AgeVerificationRequired = 'age_verification_required',
   RewardedVideoUnavailable = 'rewarded_video_unavailable',

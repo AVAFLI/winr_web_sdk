@@ -1,5 +1,5 @@
 import {
-  Campaign,
+  Giveaway,
   DailyEntryGrant,
   WINRError,
   WINRErrorCode,
@@ -32,7 +32,7 @@ export class WINRModal {
   private leftSpacer: HTMLDivElement | null = null;
 
   constructor(
-    private campaign: Campaign | null,
+    private giveaway: Giveaway | null,
     private streakState: StreakState | null,
     private sdkConfig: SDKConfig | null,
     private options: PresentationOptions = {},
@@ -154,7 +154,7 @@ export class WINRModal {
     content.className = 'winr-modal-content';
 
     this.experienceScreen = new ExperienceScreen(
-      this.campaign,
+      this.giveaway,
       this.streakState,
       this.sdkConfig,
       this.claimedToday,
