@@ -751,6 +751,10 @@ export const AVAFLI_CONSTANTS = {
     LAST_AUTO_PRESENT: 'winr_last_auto_present',
     GUEST_ID: 'winr_guest_id',
     UNREGISTERED_IMPRESSIONS: 'winr_unregistered_impressions',
+    // Adoption re-entry: when the last 6-digit code was mailed for a parked
+    // cross-device link (suffixed with the bundleId at the call site). Opens
+    // inside the cooldown show the code screen without re-sending.
+    ADOPTION_CODE_SENT_AT: 'winr_adoption_code_sent_at',
     OPTED_OUT: 'winr_opted_out',
     // Offline resilience: pending same-day register/claim retry intents and
     // the bounded offline analytics ring buffer (suffixed with the bundleId

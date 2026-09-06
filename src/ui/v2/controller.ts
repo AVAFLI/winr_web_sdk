@@ -221,6 +221,18 @@ export function emailSubmittedStorageKey(bundleId: string): string {
 }
 
 /**
+ * Adoption re-entry cooldown: a parked cross-device link re-sends its 6-digit
+ * code at most once per window. Every open still lands on the code screen;
+ * only the e-mail is rate-limited (the Twilio code itself lives 10 minutes,
+ * so a resend inside the window would only race the one already in the inbox).
+ */
+export const ADOPTION_CODE_RESEND_COOLDOWN_MS = 10 * 60 * 1000;
+
+export function adoptionCodeSentAtStorageKey(bundleId: string): string {
+  return `${AVAFLI_CONSTANTS.STORAGE_KEYS.ADOPTION_CODE_SENT_AT}_${bundleId}`;
+}
+
+/**
  * Whether a persisted `lastClaimedDate` (JSON round-trips to a string) falls
  * on today's LOCAL calendar day — the cache-first render's fallback for
  * "already claimed" when the registration handshake hasn't reported one.
@@ -554,6 +566,22 @@ export class V2ExperienceController {
    * Gated on the non-PII "email submitted" flag — raw email is never stored —
    * plus the presence of the handshake user_uid.
    */
+  private get adoptionCodeSentAtKey(): string {
+    return adoptionCodeSentAtStorageKey(this.deps.bundleId);
+  }
+
+  /** True when no adoption code was mailed inside the resend cooldown. */
+  private adoptionCodeIsStale(): boolean {
+    const raw = this.deps.storage.getItem(this.adoptionCodeSentAtKey);
+    const sentAt = raw ? Number(raw) : 0;
+    if (!Number.isFinite(sentAt) || sentAt <= 0) return true;
+    return Date.now() - sentAt >= ADOPTION_CODE_RESEND_COOLDOWN_MS;
+  }
+
+  private markAdoptionCodeSent(): void {
+    this.deps.storage.setItem(this.adoptionCodeSentAtKey, String(Date.now()));
+  }
+
   public get hasEmailConsent(): boolean {
     const submitted = this.deps.storage.getItem(this.emailSubmittedKey) === 'true';
     return submitted && this.deps.hasRegisteredUuid();
@@ -601,6 +629,20 @@ export class V2ExperienceController {
     if (this.state.kind !== 'loading') return false; // never stomp fresher truth
 
     const giveaway = this.deps.cachedGiveaway ?? this.readCachedGiveaway();
+
+    // A parked cross-device link OWNS this open. The code screen must be the
+    // FIRST frame — never a cached dashboard that sits there for the
+    // register → giveaway → restage round-trips and reads as "day 1" to a
+    // person who then closes the drawer having seen no code prompt at all
+    // (while the code e-mail is already on its way). load() re-affirms the
+    // screen and handles the (cooled-down) resend.
+    if (this.deps.adoptionPending) {
+      if (giveaway) this.giveaway = giveaway;
+      this.codeError = null;
+      this.state = { kind: 'codeEntry', reentry: true };
+      return true;
+    }
+
     if (!giveaway) return false;
 
     // Day 1 / unconsented users must land on email capture, NEVER a cached
@@ -804,13 +846,25 @@ export class V2ExperienceController {
     // "Send a new code" affordance re-attempts the send).
     if (this.deps.adoptionPending && !this.adoptionReentryStaged) {
       this.adoptionReentryStaged = true;
-      try {
-        await this.deps.restageAdoption?.();
-      } catch (error) {
-        logger.warn('restageAdoption failed — code screen still shown (resend available):', error);
-      }
+      // Screen FIRST — the person is looking at the code prompt before any
+      // e-mail goes out, never at a cached dashboard while the send races.
       this.codeError = null;
-      this.transition({ kind: 'codeEntry', reentry: true });
+      if (this.state.kind !== 'codeEntry') {
+        this.transition({ kind: 'codeEntry', reentry: true });
+      } else {
+        this.onChange?.(this.state);
+      }
+      // Re-send only when the last code is older than the cooldown; an open
+      // ten seconds after the last one must not mail a second, competing
+      // code. "Send a new code" on the screen always sends.
+      if (this.adoptionCodeIsStale()) {
+        try {
+          await this.deps.restageAdoption?.();
+          this.markAdoptionCodeSent();
+        } catch (error) {
+          logger.warn('restageAdoption failed — code screen still shown (resend available):', error);
+        }
+      }
       return;
     }
 
@@ -1236,6 +1290,7 @@ export class V2ExperienceController {
       // the raw address is PII and is never persisted locally.
       if (submitRes?.verificationRequired) {
         this.isSubmittingEmail = false;
+        this.markAdoptionCodeSent();
         this.transition({ kind: 'codeEntry', email, consent });
         return;
       }
@@ -1289,6 +1344,7 @@ export class V2ExperienceController {
       // The adoption is complete — clear the SDK's cached adoptionPending
       // flag so later drawer-opens don't re-stage a finished adoption.
       this.deps.onAdoptionResolved?.();
+      this.deps.storage.removeItem(this.adoptionCodeSentAtKey);
       await this.load();
     } catch (error) {
       // NEVER render raw backend text — map the failure to fixed copy
@@ -1325,6 +1381,7 @@ export class V2ExperienceController {
     if (!email || !consent) {
       try {
         await this.deps.restageAdoption?.();
+        this.markAdoptionCodeSent();
         this.onChange?.(this.state);
       } catch (error) {
         logger.warn('Re-entry code resend (restageAdoption) failed:', error);
@@ -1345,6 +1402,7 @@ export class V2ExperienceController {
       })) as { verificationRequired?: boolean } | undefined;
       if (submitRes?.verificationRequired) {
         // Fresh code sent — stay on the code screen, ready for input.
+        this.markAdoptionCodeSent();
         this.onChange?.(this.state);
         return;
       }
