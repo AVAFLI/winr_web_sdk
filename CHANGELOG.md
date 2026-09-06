@@ -1,6 +1,11 @@
 # Changelog
 
 
+## 3.1.7
+
+- Fixed: a browser with an unfinished cross-device link (typed an email that already belongs to another device, never entered the 6-digit code) now opens straight onto the code screen. Previously the cached "day 1" dashboard was painted first and only replaced by the code screen after the code e-mail had been sent — close the drawer in that window and you had an e-mail with no memory of any code prompt.
+- Fixed: that code is re-sent at most once every 10 minutes across drawer opens; "Send a new code" still always sends.
+
 ## 3.1.6
 
 - Fixed: a long physical-prize name on the Day 2+ prize card shrinks to fit two lines (never below 55%) instead of growing the lockup — iOS/Android/Flutter parity.
